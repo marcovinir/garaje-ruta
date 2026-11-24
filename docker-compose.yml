@@ -1,0 +1,36 @@
+# Desarrollo local: PostgreSQL 18 + Django. Next.js corre aparte con `npm run dev`.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: garaje_ruta
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d garaje_ruta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      DATABASE_URL: postgres://postgres:postgres@db:5432/garaje_ruta
+      FRONTEND_URL: http://localhost:3000
+      CSRF_TRUSTED_ORIGINS: http://localhost:3000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
