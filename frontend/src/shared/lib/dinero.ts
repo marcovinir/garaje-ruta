@@ -2,7 +2,7 @@
 
 const ESPACIO_FINO = " ";
 
-function miles(n: number): string {
+export function miles(n: number): string {
   return Math.round(n)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, ESPACIO_FINO);
