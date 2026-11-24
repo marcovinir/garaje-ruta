@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     "rest_framework",
     "apps.comun",
+    "apps.cuentas",
 ]
 
 MIDDLEWARE = [
@@ -59,10 +60,15 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+AUTH_USER_MODEL = "cuentas.Usuario"
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PAGINATION_CLASS": "apps.comun.paginacion.PaginacionEstandar",
+    "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "apps.comun.errores.manejador_excepciones",
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {"login": "10/min", "publico": "120/min", "vistas": "30/min"},
 }
@@ -74,6 +80,7 @@ CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").sp
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
+NOTIFICADOR = "apps.comun.notificaciones.NotificadorCorreo"
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL", "Garaje Ruta <no-responder@garajeruta.test>"
 )

@@ -20,7 +20,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.local
       DATABASE_URL: postgres://postgres:postgres@db:5432/garaje_ruta
       FRONTEND_URL: http://localhost:3000
       CSRF_TRUSTED_ORIGINS: http://localhost:3000

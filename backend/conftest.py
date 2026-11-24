@@ -6,3 +6,12 @@ def _limpiar_throttles():
     from django.core.cache import cache
 
     cache.clear()
+
+
+@pytest.fixture(autouse=True)
+def _limpiar_notificaciones():
+    from apps.comun.notificaciones import NotificadorMemoria
+
+    NotificadorMemoria.limpiar()
+    yield
+    NotificadorMemoria.limpiar()

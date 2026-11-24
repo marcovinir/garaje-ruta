@@ -1,0 +1,51 @@
+from rest_framework.response import Response
+from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.views import APIView
+
+from apps.comun.permisos import tiene_permiso
+from apps.cuentas.models import Usuario
+
+
+class VistaUsuarios(APIView):
+    permission_classes = [tiene_permiso("usuarios.gestionar")]
+
+    def get(self, request):
+        return Response({"ok": True})
+
+
+def _get(usuario=None):
+    request = APIRequestFactory().get("/x/")
+    if usuario:
+        force_authenticate(request, user=usuario)
+    return VistaUsuarios.as_view()(request)
+
+
+def test_permiso_niega_a_anonimo(db):
+    assert _get().status_code == 403
+
+
+def test_permiso_niega_sin_codigo(db):
+    d = Usuario.objects.crear_usuario("d@x.test", "D", "X", "colaborador", activo=True)
+    assert _get(d).status_code == 403
+
+
+def test_tiene_alguno_permite_con_cualquiera(db):
+    from apps.comun.permisos import tiene_alguno
+
+    class Vista(APIView):
+        permission_classes = [tiene_alguno("reportes.ver", "articulos.ver")]
+
+        def get(self, request):
+            return Response({"ok": True})
+
+    d = Usuario.objects.crear_usuario("d2@x.test", "D", "X", "colaborador", activo=True)
+    request = APIRequestFactory().get("/x/")
+    force_authenticate(request, user=d)
+    assert Vista.as_view()(request).status_code == 200
+    anonimo = APIRequestFactory().get("/x/")
+    assert Vista.as_view()(anonimo).status_code == 403
+
+
+def test_permiso_permite_con_codigo(db):
+    a = Usuario.objects.crear_usuario("a@x.test", "A", "X", "admin", activo=True)
+    assert _get(a).status_code == 200
