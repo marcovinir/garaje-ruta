@@ -144,3 +144,10 @@ def test_fechas_en_hora_de_costa_rica(db):
     assert not Venta.objects.filter(
         fecha__lt=datetime(2026, 5, 27, tzinfo=ZoneInfo("UTC"))
     ).exists()
+
+
+def test_tipo_cambio_de_ejemplo_realista(db):
+    sembrar()
+    for tc in TipoCambio.objects.all():
+        assert 440 <= tc.venta <= 460
+        assert tc.compra == tc.venta - 6

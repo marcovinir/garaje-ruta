@@ -13,7 +13,7 @@ def _a_texto(valor) -> str:
 
 
 def _aplanar(errores: dict, prefijo: str = "") -> dict[str, list[str]]:
-    """{"paciente": {"email": [...]}} → {"paciente.email": [...]}: cada error va a su campo."""
+    """{"repuesto": {"cantidad": [...]}} → {"repuesto.cantidad": [...]}: un error por campo."""
     campos: dict[str, list[str]] = {}
     for clave, valor in errores.items():
         ruta = f"{prefijo}{clave}"

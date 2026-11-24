@@ -39,28 +39,28 @@ def test_error_404_tiene_forma_estandar():
     assert r.data["detalle"]
 
 
-class PacienteSerializer(serializers.Serializer):
+class ContactoSerializer(serializers.Serializer):
     email = serializers.EmailField()
     nombre = serializers.CharField()
 
 
-class ReservaSerializer(serializers.Serializer):
-    servicio = serializers.IntegerField()
-    paciente = PacienteSerializer()
+class ArticuloSerializer(serializers.Serializer):
+    precio = serializers.IntegerField()
+    contacto = ContactoSerializer()
 
 
 class VistaAnidada(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        ReservaSerializer(data=request.data).is_valid(raise_exception=True)
+        ArticuloSerializer(data=request.data).is_valid(raise_exception=True)
 
 
 def test_error_anidado_se_aplana_con_punto():
-    datos = {"servicio": "x", "paciente": {"email": "no", "nombre": "Ana"}}
+    datos = {"precio": "x", "contacto": {"email": "no", "nombre": "Ana"}}
     r = VistaAnidada.as_view()(APIRequestFactory().post("/x/", datos, format="json"))
     assert r.status_code == 400
-    assert set(r.data["campos"]) == {"servicio", "paciente.email"}
-    assert r.data["campos"]["paciente.email"] == [
+    assert set(r.data["campos"]) == {"precio", "contacto.email"}
+    assert r.data["campos"]["contacto.email"] == [
         "Introduzca una dirección de correo electrónico válida."
     ]

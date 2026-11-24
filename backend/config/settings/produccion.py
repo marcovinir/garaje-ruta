@@ -23,7 +23,7 @@ FRONTEND_URL = os.environ["FRONTEND_URL"].rstrip("/")
 # El pooler de Supabase en modo transacción no admite sentencias preparadas (psycopg 3).
 DATABASES["default"].setdefault("OPTIONS", {})["prepare_threshold"] = None
 
-# Los límites de peticiones (login, reservas) se comparten entre las instancias serverless.
+# Los límites de peticiones (login, vistas) se comparten entre las instancias serverless.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
