@@ -12,6 +12,7 @@ import { EncabezadoPagina } from "../ui/EncabezadoPagina";
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO, TARJETA } from "../ui/estilos";
 import { useEscritorio } from "../ui/useEscritorio";
 import { useArticulos, useTipoCambio } from "./api";
+import { BarraAcciones } from "./BarraAcciones";
 import { filtrosPanelDesdeUrl } from "./filtros";
 import { FiltrosPanel } from "./FiltrosPanel";
 import { TablaPanel } from "./TablaPanel";
@@ -86,11 +87,20 @@ export function PaginaArticulos() {
             {consulta.data.count} {consulta.data.count === 1 ? "artículo" : "artículos"}
           </p>
           {escritorio ? (
-            <TablaPanel filas={consulta.data.results} puedeEditar={puedeEditar} />
+            <TablaPanel
+              filas={consulta.data.results}
+              puedeEditar={puedeEditar}
+              acciones={(fila) => <BarraAcciones fila={fila} />}
+            />
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {consulta.data.results.map((fila) => (
-                <TarjetaPanel key={fila.id} fila={fila} puedeEditar={puedeEditar} />
+                <TarjetaPanel
+                  key={fila.id}
+                  fila={fila}
+                  puedeEditar={puedeEditar}
+                  acciones={<BarraAcciones fila={fila} />}
+                />
               ))}
             </div>
           )}

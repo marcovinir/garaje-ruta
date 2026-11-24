@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { compartirEnlace } from "@/shared/lib/compartir";
+
 type Props = { titulo: string; url: string };
 
 /** En el teléfono abre el menú de compartir; donde no existe, copia el enlace y lo anuncia. */
@@ -15,20 +17,9 @@ export function Compartir({ titulo, url }: Props) {
   }, [mensaje]);
 
   async function compartir() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: titulo, url });
-      } catch {
-        // La persona cerró el menú: no hay nada que avisar.
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setMensaje("Enlace copiado");
-    } catch {
-      setMensaje(`No se pudo copiar. El enlace es ${url}`);
-    }
+    const resultado = await compartirEnlace(titulo, url);
+    if (resultado === "copiado") setMensaje("Enlace copiado");
+    if (resultado === "error") setMensaje(`No se pudo copiar. El enlace es ${url}`);
   }
 
   return (
