@@ -62,7 +62,7 @@ function NoDisponible({
   const listado = LISTADO[ficha.tipo];
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-10 sm:px-6">
-      <section className="bg-tarjeta border-borde aparece flex flex-col items-center gap-4 rounded-3xl border px-6 py-10 text-center">
+      <section className="bg-tarjeta border-borde flex flex-col items-center gap-4 rounded-3xl border px-6 py-10 text-center">
         {ficha.estado_publico !== "no_disponible" ? (
           <EtiquetaEstado estado={ficha.estado_publico} />
         ) : null}

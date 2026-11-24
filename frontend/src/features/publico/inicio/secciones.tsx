@@ -27,7 +27,10 @@ function Encabezado({
       <h2 id={id} className="titulo text-3xl sm:text-4xl">
         {titulo}
       </h2>
-      <Link href={enlace} className="text-rojo hover:text-rojo-oscuro font-semibold">
+      <Link
+        href={enlace}
+        className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
+      >
         {texto} →
       </Link>
     </div>

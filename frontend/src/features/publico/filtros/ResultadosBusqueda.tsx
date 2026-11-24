@@ -39,7 +39,7 @@ function Seccion({
         {pagina.count > pagina.results.slice(0, MAXIMO).length ? (
           <Link
             href={`${base}${aQueryString({ q })}`}
-            className="text-rojo hover:text-rojo-oscuro font-semibold"
+            className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
           >
             Ver los {pagina.count} {plural} →
           </Link>

@@ -6,8 +6,8 @@ import { Accesos, Carrocerias, Destacados, Ofertas } from "@/features/publico/in
 export default function Inicio() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-10 sm:px-6">
-      <section className="aparece flex flex-col gap-6" aria-labelledby="titular">
-        <p className="text-rojo text-sm font-semibold tracking-widest">
+      <section className="flex flex-col gap-6" aria-labelledby="titular">
+        <p className="text-rojo-oscuro text-sm font-semibold tracking-widest">
           PATIO DE AUTOS USADOS · HEREDIA
         </p>
         <h1 id="titular" className="titulo max-w-3xl text-5xl leading-[0.95] sm:text-7xl">

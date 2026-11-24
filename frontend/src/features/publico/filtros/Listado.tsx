@@ -64,6 +64,7 @@ async function Resultados({
           </div>
         </div>
         {catalogos ? <ChipsFiltros base={base} filtros={filtros} catalogos={catalogos} /> : null}
+        <h2 className="sr-only">Resultados</h2>
         {pagina.results.length ? (
           <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {pagina.results.map((t, i) => (
@@ -78,7 +79,10 @@ async function Resultados({
             <p className="text-tinta-suave">
               No hay {NOMBRES[tipo][1]} con esos filtros. Probá quitando alguno.
             </p>
-            <Link href={base} className="text-rojo hover:text-rojo-oscuro font-semibold">
+            <Link
+              href={base}
+              className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
+            >
               Ver todos los {NOMBRES[tipo][1]} →
             </Link>
           </div>
@@ -112,7 +116,7 @@ type Props = {
 export function Listado({ tipo, titulo, intro, searchParams }: Props) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <header className="aparece flex flex-col gap-2">
+      <header className="flex flex-col gap-2">
         <h1 className="titulo text-4xl sm:text-5xl">{titulo}</h1>
         <p className="text-tinta-suave max-w-2xl">{intro}</p>
       </header>
