@@ -1,6 +1,7 @@
 """Artículos del catálogo: un `Articulo` común con su subtipo `Auto` o `Repuesto` (§6)."""
 
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex, OpClass
 from django.db import models
 from django.db.models import Deferrable, F, Q
 from django.utils import timezone
@@ -70,6 +71,8 @@ class Articulo(models.Model):
         indexes = [
             models.Index(fields=["tipo", "estado"], name="articulo_tipo_estado"),
             models.Index(fields=["-publicado_en"], name="articulo_publicado"),
+            # Búsqueda por parecido del título (pg_trgm); ver la migración 0004.
+            GinIndex(OpClass("titulo", name="gin_trgm_ops"), name="articulo_titulo_trgm"),
         ]
         constraints = [
             models.CheckConstraint(

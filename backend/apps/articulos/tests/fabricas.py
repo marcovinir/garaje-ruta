@@ -77,11 +77,10 @@ def crear_repuesto(cantidad: int = 1, precio: int = 45_000, **campos) -> Articul
         precio_colones=precio,
         creado_por=usuario_admin(),
     )
-    Repuesto.objects.create(
-        articulo=articulo,
-        categoria_pieza=CategoriaPieza.objects.get(slug="sistema-electrico"),
-        condicion=CondicionRepuesto.USADO,
-        cantidad=cantidad,
-        **campos,
-    )
+    datos = {
+        "categoria_pieza": CategoriaPieza.objects.get(slug="sistema-electrico"),
+        "condicion": CondicionRepuesto.USADO,
+        "cantidad": cantidad,
+    }
+    Repuesto.objects.create(articulo=articulo, **{**datos, **campos})
     return articulo
