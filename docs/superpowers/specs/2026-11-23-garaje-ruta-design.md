@@ -118,17 +118,31 @@ PK `id` bigint en todas las tablas (salvo las de subtipo, cuya PK es la FK a `ar
 | `modelo` | `marca_id`, `nombre`, `slug` | Único `(marca_id, nombre)` y `(marca_id, slug)`. |
 | `transmision` | `nombre` (único) | Manual, Automática, CVT… |
 | `combustible` | `nombre` (único) | Gasolina, Diésel, Híbrido, Eléctrico… |
-| `carroceria` | `nombre` (único) | Sedán, Hatchback, SUV, Pickup… |
+| `carroceria` | `nombre` (único), `slug` (único), `orden` | Sedán, Hatchback, SUV, Crossover, Pickup, Comercial… Son los accesos rápidos del inicio. |
+| `traccion` | `nombre` (único) | 4x2, 4x4, AWD. |
+| `grupo_equipamiento` | `nombre` (único), `orden` | Confort, Seguridad, Tecnología, Exterior. |
+| `equipamiento` | `grupo_id`, `nombre` (único), `orden`, `filtrable` | Aire acondicionado, cámara de retroceso, Apple CarPlay… Los `filtrable` salen como casillas en «Más filtros». |
 | `categoria_pieza` | `padre_id` (nullable, FK a sí misma), `nombre`, `slug` (único) | Árbol: Motor > Alternador. Filtrar por una categoría incluye sus descendientes. Profundidad máx. 3 (validada en el servicio). |
 
 Son tablas y no `choices` para que el admin agregue valores sin tocar el código.
+
+**Equipamiento inicial** (lo siembra una migración de datos; el admin agrega más desde el panel). ★ = filtrable.
+- **Confort:** aire acondicionado ★, climatizador automático, vidrios eléctricos ★, espejos eléctricos, cierre central, asientos de cuero ★, asientos eléctricos, asientos con calefacción, techo solar o panorámico ★, volante multifunción, control crucero ★, arranque por botón, llave inteligente.
+- **Seguridad:** frenos ABS, control de estabilidad, cámara de retroceso ★, sensores de retroceso ★, sensores delanteros, cámara 360°, alarma, monitor de punto ciego, asistente de carril, frenado autónomo de emergencia.
+- **Tecnología:** pantalla táctil, Apple CarPlay / Android Auto ★, Bluetooth, GPS, cargador inalámbrico, puertos USB, tablero digital.
+- **Exterior:** aros de lujo, faros LED, faros de niebla, rack de techo, tiro (enganche), estribos, cobertor de cajón (pickup), vidrios polarizados.
+
+El número de bolsas de aire es un dato del auto (`bolsas_aire`), no un equipamiento, porque se compara y filtra como número.
+
+**Referencia revisada:** `veinsausados.com` (2026-11-23). Sus fichas muestran kilometraje, transmisión, combustible, tracción, motor y pasajeros, precio «Antes / Ahora», calculadora de cuota, comparar, favoritos y compartir; **no** muestran lista de equipamiento. De ahí se tomaron tracción, pasajeros, precio anterior y los accesos rápidos por carrocería; el equipamiento se agrega porque es justo lo que el comprador pregunta por WhatsApp.
 
 **Artículos**
 
 | Tabla | Campos | Notas |
 |---|---|---|
-| `articulo` | `tipo` (`auto`/`repuesto`), `titulo`, `descripcion`, `precio_colones`, `estado`, `destacado`, `publicado_en`, `creado_por` (FK usuario), `creado_en`, `actualizado_en` | `estado`: `disponible`, `reservado`, `vendido`, `oculto`. Check `precio_colones >= 0`. |
-| `auto` | `articulo_id` (PK y FK), `modelo_id`, `anio`, `version`, `kilometraje`, `transmision_id`, `combustible_id`, `carroceria_id` (nullable), `color`, `cilindrada_cc`, `puertas` | Checks: `anio` entre 1950 y el año siguiente al actual, `kilometraje >= 0`. |
+| `articulo` | `tipo` (`auto`/`repuesto`), `titulo`, `descripcion`, `precio_colones`, `precio_anterior_colones` (nullable), `estado`, `destacado`, `publicado_en`, `creado_por` (FK usuario), `creado_en`, `actualizado_en` | `estado`: `disponible`, `reservado`, `vendido`, `oculto`. Checks `precio_colones >= 0` y `precio_anterior_colones > precio_colones`. Con precio anterior, la tarjeta muestra «Antes / Ahora» y entra en «Ofertas». |
+| `auto` | `articulo_id` (PK y FK), `modelo_id`, `anio`, `version`, `kilometraje`, `transmision_id`, `combustible_id`, `traccion_id`, `carroceria_id`, `color_exterior`, `color_interior`, `cilindrada_cc` (nullable: eléctricos), `puertas`, `pasajeros`, `bolsas_aire`, `unico_dueno`, `procedencia` (`agencia`/`importado`), `marchamo_al_dia`, `riteve_vence` (fecha, nullable), `acepta_vehiculo`, `precio_negociable` | Checks: `anio` entre 1950 y el año siguiente al actual, `kilometraje >= 0`, `pasajeros` y `puertas > 0`. La placa **no** se guarda ni se muestra (privacidad). |
+| `auto_equipamiento` | `auto_id`, `equipamiento_id` | M:N, único `(auto_id, equipamiento_id)`. |
 | `repuesto` | `articulo_id` (PK y FK), `categoria_pieza_id`, `condicion` (`nuevo`/`usado`), `cantidad`, `codigo_interno` (único, nullable), `numero_parte` | Check `cantidad >= 0`. |
 | `compatibilidad` | `repuesto_id`, `modelo_id`, `anio_desde`, `anio_hasta` | Check `anio_desde <= anio_hasta`. Un repuesto puede tener varias filas. |
 | `foto` | `articulo_id`, `public_id` (Cloudinary), `ancho`, `alto`, `orden` | Único `(articulo_id, orden)` diferible. **La principal es `orden = 1`.** |
@@ -226,7 +240,7 @@ Se reutiliza el sistema de Sonrisa Viva: `TienePermiso("codigo")` en cada vista 
 Todo bajo `/api/v1/`. Errores en el formato de Sonrisa Viva: `{ "detalle": "...", "campos": {...} }`.
 
 - **Público:**
-  - `GET articulos/?tipo=&q=&marca=&modelo=&anio_min=&anio_max=&precio_min=&precio_max=&categoria=&condicion=&transmision=&combustible=&compatible_marca=&compatible_modelo=&compatible_anio=&orden=recientes|precio_asc|precio_desc&page=` (RF-01, 02, 06–09, 12).
+  - `GET articulos/?tipo=&q=&marca=&modelo=&anio_min=&anio_max=&precio_min=&precio_max=&categoria=&condicion=&transmision=&combustible=&traccion=&carroceria=&equipamiento=a,b&km_max=&ofertas=1&compatible_marca=&compatible_modelo=&compatible_anio=&orden=recientes|precio_asc|precio_desc&page=` (RF-01, 02, 06–09, 12).
   - `GET articulos/{id}/` (incluye estado para decidir «ya se vendió») y `GET articulos/{id}/similares/`.
   - `GET destacados/`, `GET catalogos/` (marcas con modelos, categorías en árbol, transmisiones, combustibles, carrocerías — para armar los filtros), `GET configuracion/`, `GET tipo-cambio/`.
   - `GET sitemap/` (ids, textos de URL y `actualizado_en` de los disponibles) para que Next genere `sitemap.xml`.
