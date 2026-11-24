@@ -17,6 +17,7 @@ ENTORNO = {
     "ALLOWED_HOSTS": "garaje-ruta-api.vercel.app",
     "CSRF_TRUSTED_ORIGINS": "https://garajeruta.marcovinir.dev",
     "FRONTEND_URL": "https://garajeruta.marcovinir.dev",
+    "REVALIDACION_SECRETO": "solo-para-pruebas",
 }
 
 LEER = """

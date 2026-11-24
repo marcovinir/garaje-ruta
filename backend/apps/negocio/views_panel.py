@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.comun.permisos import tiene_permiso
+from apps.comun.revalidacion import revalidar_al_confirmar
 from apps.cuentas.permisos import ARTICULOS_VER, CONFIGURACION_EDITAR
 
 from .models import ConfiguracionNegocio, HorarioAtencion
@@ -43,6 +44,7 @@ def guardar_configuracion(datos: dict) -> ConfiguracionNegocio:
     HorarioAtencion.objects.bulk_create(
         HorarioAtencion(configuracion=config, **h) for h in horarios
     )
+    revalidar_al_confirmar("configuracion")
     return config
 
 

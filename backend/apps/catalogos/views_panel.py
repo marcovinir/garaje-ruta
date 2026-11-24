@@ -7,6 +7,7 @@ from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
 from apps.comun.errores import Conflicto
 from apps.comun.permisos import tiene_permiso
+from apps.comun.revalidacion import revalidar_al_confirmar
 from apps.cuentas.permisos import ARTICULOS_VER, CATALOGOS_AGREGAR, CATALOGOS_GESTIONAR
 
 from .models import (
@@ -99,11 +100,20 @@ class CatalogoViewSet(viewsets.ModelViewSet):
         clases = [*self.permission_classes, *([tiene_permiso(extra)] if extra else [])]
         return [c() for c in clases]
 
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        revalidar_al_confirmar("catalogos", "articulos")
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        revalidar_al_confirmar("catalogos", "articulos")
+
     def perform_destroy(self, instancia):
         try:
             instancia.delete()
         except ProtectedError as error:
             raise Conflicto(EN_USO) from error
+        revalidar_al_confirmar("catalogos", "articulos")
 
 
 def _viewset(modelo_, serializer, permiso_crear=CATALOGOS_GESTIONAR):
