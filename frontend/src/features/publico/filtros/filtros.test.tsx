@@ -111,6 +111,13 @@ describe("PanelFiltros", () => {
     expect(push).toHaveBeenCalledWith("/autos?orden=precio_asc&marca=3&equipamiento=1");
   });
 
+  it("acepta cualquier precio en colones (no solo múltiplos de ₡100 000)", () => {
+    render(
+      <PanelFiltros tipo="auto" id="f" catalogos={catalogos} filtros={{ precio_max: "6250000" }} />,
+    );
+    expect(screen.getByLabelText("Precio hasta (₡)")).toBeValid();
+  });
+
   it("en repuestos ofrece categoría, condición y «Buscar por vehículo»", () => {
     render(
       <PanelFiltros

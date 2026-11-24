@@ -50,7 +50,7 @@ describe("inicio", () => {
     expect(screen.getByRole("heading", { name: "Recién llegados" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Corolla/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Swift/ })).toBeInTheDocument();
-    expect(datos.obtenerArticulos).toHaveBeenCalledWith({ ofertas: "1" });
+    expect(datos.obtenerArticulos).toHaveBeenCalledWith({ ofertas: "1", tipo: "auto" });
   });
 
   it("muestra las carrocerías como accesos al listado", async () => {

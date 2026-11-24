@@ -11,6 +11,9 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT ${url}`);
   }),
   useRouter: () => ({ push: vi.fn() }),
+  unstable_rethrow: vi.fn((error: unknown) => {
+    if (error instanceof Error && /^(NOT_FOUND|REDIRECT)/.test(error.message)) throw error;
+  }),
 }));
 vi.mock("@/shared/api/datos", () => ({
   obtenerFicha: vi.fn(),
@@ -148,6 +151,18 @@ describe("metadataFicha", () => {
     ]);
   });
 
+  it("si Django no responde usa el título del sitio, no «no encontrado»", async () => {
+    vi.mocked(datos.obtenerFicha).mockRejectedValue(new Error("caído"));
+    expect(await metadataFicha("toyota-corolla-2015-se-12")).toEqual({});
+  });
+
+  it("sin Cloudinary no publica el marcador SVG como og:image", async () => {
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD = "";
+    vi.mocked(datos.obtenerFicha).mockResolvedValue(ficha);
+    const meta = await metadataFicha("toyota-corolla-2015-se-12");
+    expect(meta.openGraph?.images).toBeUndefined();
+  });
+
   it("un artículo vendido no se indexa", async () => {
     vi.mocked(datos.obtenerFicha).mockResolvedValue({
       id: 12,
@@ -202,6 +217,17 @@ describe("PaginaFicha", () => {
     expect(screen.getByText("Toyota Corolla 2015 SE")).toBeInTheDocument();
     const similares = screen.getByRole("region", { name: "Te pueden interesar" });
     expect(within(similares).getAllByRole("link")).toHaveLength(3);
+  });
+
+  it("si Django falla muestra un aviso dentro de la página", async () => {
+    vi.mocked(datos.obtenerFicha).mockRejectedValue(new Error("caído"));
+    render(await PaginaFicha({ seccion: "autos", slug: "toyota-corolla-2015-se-12" }));
+    expect(screen.getByRole("status")).toHaveTextContent("No pudimos cargar este artículo");
+  });
+
+  it("deja pasar el 404 de Next aunque atrape los errores de Django", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue(null);
+    await expect(PaginaFicha({ seccion: "autos", slug: "x-999" })).rejects.toThrow("NOT_FOUND");
   });
 
   it("un artículo oculto no muestra ningún dato suyo", async () => {

@@ -3,15 +3,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { pedir, pedirOpcional } from "./servidor";
-import type {
-  Catalogos,
-  Configuracion,
-  EntradaSitemap,
-  Ficha,
-  Pagina,
-  Tarjeta,
-  TipoCambio,
-} from "./tipos";
+import type { Catalogos, Configuracion, EntradaSitemap, Ficha, Pagina, Tarjeta } from "./tipos";
 
 /**
  * Lecturas cacheadas. Las etiquetas son las que Django revalida
@@ -64,12 +56,6 @@ export async function obtenerConfiguracion(): Promise<Configuracion> {
   cacheTag("configuracion");
   cacheLife("hours");
   return pedir("/api/v1/configuracion/");
-}
-
-export async function obtenerTipoCambio(): Promise<TipoCambio | null> {
-  "use cache";
-  cacheLife("hours");
-  return pedir<TipoCambio>("/api/v1/tipo-cambio/").catch(() => null);
 }
 
 export async function obtenerSitemap(): Promise<EntradaSitemap[]> {
