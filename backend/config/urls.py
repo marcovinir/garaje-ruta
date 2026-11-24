@@ -9,4 +9,7 @@ urlpatterns = [
     path("api/v1/auth/", include("apps.cuentas.urls")),
     path("api/v1/panel/", include("apps.cuentas.urls_panel")),
     path("api/v1/panel/", include("apps.articulos.urls_panel")),
+    path("api/v1/panel/", include("apps.catalogos.urls_panel")),
+    path("api/v1/panel/", include("apps.negocio.urls_panel")),
+    path("api/v1/panel/", include("apps.actividad.urls_panel")),
 ]
