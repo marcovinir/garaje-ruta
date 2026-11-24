@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { EncabezadoPagina } from "@/features/panel/ui/EncabezadoPagina";
+import { PaginaArticulos } from "@/features/panel/articulos/PaginaArticulos";
 
 export const metadata: Metadata = { title: "Artículos" };
 
-// Provisional: el listado llega en la tarea 4 (#70).
+// Depende de la sesión del navegador (ver el layout de `(protegido)`).
+export const instant = false;
+
 export default function Articulos() {
-  return <EncabezadoPagina titulo="Artículos" />;
+  return (
+    <Suspense>
+      <PaginaArticulos />
+    </Suspense>
+  );
 }
