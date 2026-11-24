@@ -16,6 +16,9 @@ from .models import Articulo, EstadoArticulo, TipoArticulo
 
 CONFIG_BUSQUEDA = "es_unaccent"
 SIMILITUD_MINIMA = 0.3
+MAX_TERMINOS = 6
+# Por palabra se exige más parecido: con 0.3, «accnt» se «parece» a cualquier título con «a».
+SIMILITUD_TERMINO = 0.45
 ORDENES = {
     "recientes": ["-publicado_en", "-id"],
     "precio_asc": ["precio_colones", "-publicado_en"],
@@ -71,11 +74,20 @@ def _buscar(qs: QuerySet[Articulo], texto: str) -> QuerySet[Articulo]:
         + SearchVector("descripcion", weight="C", config=CONFIG_BUSQUEDA)
     )
     consulta = SearchQuery(texto, config=CONFIG_BUSQUEDA)
-    return qs.annotate(
+    qs = qs.annotate(
         rango=SearchRank(vector, consulta),
         similitud=TrigramWordSimilarity(texto, "titulo"),
         coincide=vector,
-    ).filter(Q(coincide=consulta) | Q(similitud__gt=SIMILITUD_MINIMA))
+    )
+    # Cada palabra tiene que aparecer (o parecerse a una del título): «alternador accent»
+    # no trae todos los alternadores.
+    for n, termino in enumerate(texto.split()[:MAX_TERMINOS]):
+        parecido = f"parecido_{n}"
+        qs = qs.annotate(**{parecido: TrigramWordSimilarity(termino, "titulo")}).filter(
+            Q(coincide=SearchQuery(termino, config=CONFIG_BUSQUEDA))
+            | Q(**{f"{parecido}__gt": SIMILITUD_TERMINO})
+        )
+    return qs
 
 
 def filtrar_catalogo(qs: QuerySet[Articulo], params: Mapping[str, str]) -> QuerySet[Articulo]:

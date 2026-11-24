@@ -122,7 +122,10 @@ def test_busqueda_sin_tildes_y_con_errores(db):
         descripcion="Trae cámara de retroceso y sensores."
     )
     alternador = crear_repuesto(titulo="Alternador Hyundai Accent")
+    otro_alternador = crear_repuesto(titulo="Alternador Toyota Yaris")
     assert corolla.id in filtrar(q="corola")
     assert filtrar(q="camara retroceso") == {con_camara.id}
     assert filtrar(q="alternador accent") == {alternador.id}
-    assert filtrar(q="toyota") == {corolla.id}
+    assert filtrar(q="alternador") == {alternador.id, otro_alternador.id}
+    assert filtrar(q="alternador accnt", orden="precio_asc") == {alternador.id}
+    assert filtrar(q="toyota") == {corolla.id, otro_alternador.id}

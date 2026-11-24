@@ -88,7 +88,9 @@ def _guardar_subtipo(articulo: Articulo, datos: dict) -> None:
     if articulo.tipo == TipoArticulo.AUTO:
         datos_auto = dict(datos.get("auto") or {})
         equipamiento = datos_auto.pop("equipamiento", None)
-        auto, _ = Auto.objects.get_or_create(articulo=articulo, defaults=datos_auto)
+        auto = Auto.objects.select_for_update().filter(articulo=articulo).first()
+        if auto is None:
+            auto = Auto(articulo=articulo, **datos_auto)
         for campo, valor in datos_auto.items():
             setattr(auto, campo, valor)
         auto.save()
@@ -97,7 +99,9 @@ def _guardar_subtipo(articulo: Articulo, datos: dict) -> None:
     else:
         datos_repuesto = dict(datos.get("repuesto") or {})
         compatibilidades = datos_repuesto.pop("compatibilidades", None)
-        repuesto, _ = Repuesto.objects.get_or_create(articulo=articulo, defaults=datos_repuesto)
+        repuesto = Repuesto.objects.select_for_update().filter(articulo=articulo).first()
+        if repuesto is None:
+            repuesto = Repuesto(articulo=articulo, **datos_repuesto)
         for campo, valor in datos_repuesto.items():
             setattr(repuesto, campo, valor)
         repuesto.save()
@@ -123,6 +127,8 @@ def crear_articulo(datos: dict, usuario) -> Articulo:
 
 @transaction.atomic
 def editar_articulo(articulo: Articulo, datos: dict, usuario) -> Articulo:
+    # Fila bloqueada y releída: una venta simultánea no se pisa con datos viejos.
+    articulo = _bloquear(articulo)
     antes = _estado_editable(articulo)
     for campo in CAMPOS_ARTICULO:
         if campo in datos:
@@ -171,6 +177,7 @@ def duplicar_articulo(articulo: Articulo, usuario) -> Articulo:
 
 @transaction.atomic
 def eliminar_articulo(articulo: Articulo, usuario) -> None:
+    articulo = _bloquear(articulo)
     if articulo.ventas.exists():
         raise Conflicto(CON_VENTAS)
     fotos = list(articulo.fotos.values_list("public_id", flat=True))
@@ -199,8 +206,6 @@ def _bloquear(articulo: Articulo) -> Articulo:
 
 @transaction.atomic
 def cambiar_estado(articulo: Articulo, nuevo: str, usuario) -> Articulo:
-    from rest_framework.exceptions import ValidationError
-
     articulo = _bloquear(articulo)
     if nuevo == EstadoArticulo.VENDIDO:
         raise ValidationError(USA_VENDER)
