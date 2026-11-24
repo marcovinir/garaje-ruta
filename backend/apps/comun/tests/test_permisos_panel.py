@@ -59,6 +59,8 @@ def test_demo_no_escribe_en_el_panel(db, ruta, callback):
         metodos = [m for m in acciones if m in METODOS_ESCRITURA]
     else:
         metodos = [m for m in METODOS_ESCRITURA if hasattr(clase, m)]
+    # Un método deshabilitado (405) no es una fuga de permisos: solo se prueban los aceptados.
+    metodos = [m for m in metodos if m in getattr(clase, "http_method_names", METODOS_ESCRITURA)]
     for metodo in metodos:
         r = getattr(cliente, metodo)(_url_de_prueba(ruta), {}, format="json")
         assert r.status_code == 403, (metodo, ruta, r.status_code)
