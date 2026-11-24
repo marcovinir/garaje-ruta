@@ -1,11 +1,21 @@
 """Escrituras de artículos desde el panel. Cada una deja su línea en el historial."""
 
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
 
 from apps.actividad.models import AccionHistorial, HistorialCambio
 from apps.comun.errores import Conflicto
 
-from .models import Articulo, Auto, Compatibilidad, EstadoArticulo, Repuesto, TipoArticulo
+from .fotos import MAX_FOTOS, PREFIJO_EJEMPLO, PREFIJO_PROPIO, borrables, obtener_almacen
+from .models import (
+    Articulo,
+    Auto,
+    Compatibilidad,
+    EstadoArticulo,
+    Foto,
+    Repuesto,
+    TipoArticulo,
+)
 
 CAMPOS_ARTICULO = [
     "titulo",
@@ -159,7 +169,9 @@ def duplicar_articulo(articulo: Articulo, usuario) -> Articulo:
 def eliminar_articulo(articulo: Articulo, usuario) -> None:
     if articulo.ventas.exists():
         raise Conflicto(CON_VENTAS)
+    fotos = list(articulo.fotos.values_list("public_id", flat=True))
     articulo.delete()
+    _borrar_fotos_al_confirmar(fotos)
 
 
 TRANSICIONES = {
@@ -252,3 +264,38 @@ def deshacer_ultima_venta(articulo: Articulo, usuario) -> None:
         {"cantidad": venta.cantidad, "fecha_venta": venta.fecha.isoformat()},
     )
     venta.delete()
+
+
+def _borrar_fotos_al_confirmar(public_ids) -> None:
+    propias = borrables(public_ids)
+    if propias:
+        transaction.on_commit(lambda: obtener_almacen().borrar(propias))
+
+
+@transaction.atomic
+def guardar_fotos(articulo: Articulo, fotos: list[dict], usuario) -> list[Foto]:
+    """Reemplaza las fotos en el orden recibido; la primera es la principal."""
+    if len(fotos) > MAX_FOTOS:
+        raise ValidationError(f"Máximo {MAX_FOTOS} fotos por artículo.")
+    if any(not f["public_id"].startswith((PREFIJO_PROPIO, PREFIJO_EJEMPLO)) for f in fotos):
+        raise ValidationError("Foto no válida.")
+    articulo = _bloquear(articulo)
+    anteriores = list(articulo.fotos.values_list("public_id", flat=True))
+    articulo.fotos.all().delete()
+    nuevas = Foto.objects.bulk_create(
+        Foto(
+            articulo=articulo,
+            public_id=f["public_id"],
+            ancho=f["ancho"],
+            alto=f["alto"],
+            orden=orden,
+        )
+        for orden, f in enumerate(fotos, start=1)
+    )
+    articulo.save(update_fields=["actualizado_en"])
+    quedan = {f["public_id"] for f in fotos}
+    _borrar_fotos_al_confirmar([p for p in anteriores if p not in quedan])
+    registrar(
+        articulo, usuario, AccionHistorial.FOTOS, {"antes": len(anteriores), "despues": len(fotos)}
+    )
+    return nuevas
