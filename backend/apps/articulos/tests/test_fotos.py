@@ -119,3 +119,27 @@ def test_subir_fotos_ejemplo(db, tmp_path: Path):
     ]
     f = Foto.objects.get(public_id="garaje-ruta/ejemplo/auto-01")
     assert (f.ancho, f.alto) == (800, 600)
+
+
+def test_fotos_repetidas_rechazadas(colaborador):
+    a = crear_auto()
+    r = colaborador.put(f"{URL}{a.id}/fotos/", [foto(1), foto(1)], format="json")
+    assert r.status_code == 400
+    assert r.json()["detalle"] == "Hay fotos repetidas."
+
+
+def test_foto_propia_de_otro_articulo_rechazada(colaborador):
+    otro, a = crear_auto(), crear_auto()
+    colaborador.put(f"{URL}{otro.id}/fotos/", [foto(1)], format="json")
+    r = colaborador.put(f"{URL}{a.id}/fotos/", [foto(1)], format="json")
+    assert r.status_code == 400
+    assert r.json()["detalle"] == "Esa foto ya es de otro artículo."
+    assert otro.fotos.get().public_id == "garaje-ruta/articulos/f1"
+
+
+def test_foto_de_ejemplo_compartida_se_acepta(colaborador):
+    otro, a = crear_auto(), crear_auto()
+    ejemplo = foto(1, "garaje-ruta/ejemplo/")
+    colaborador.put(f"{URL}{otro.id}/fotos/", [ejemplo], format="json")
+    r = colaborador.put(f"{URL}{a.id}/fotos/", [ejemplo], format="json")
+    assert r.status_code == 200, r.json()

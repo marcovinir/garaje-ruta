@@ -143,3 +143,11 @@ def test_activar_no_sirve_para_cuenta_que_ya_tenia_contrasena(cliente, db):
     assert r.status_code == 400
     u.refresh_from_db()
     assert not u.is_active
+
+
+def test_enlace_usa_la_ruta_configurada_del_panel(nuevo, settings):
+    settings.FRONTEND_URL = "https://garaje.example"
+    settings.PANEL_RUTA = "/gestion-9x2"
+    enviar_enlace_activacion(nuevo)
+    (envio,) = NotificadorMemoria.enviados
+    assert "https://garaje.example/gestion-9x2/activar/" in envio["texto"]

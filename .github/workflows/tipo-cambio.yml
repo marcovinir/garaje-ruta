@@ -25,6 +25,7 @@ jobs:
       ALLOWED_HOSTS: localhost
       CSRF_TRUSTED_ORIGINS: https://garajeruta.marcovinir.dev
       FRONTEND_URL: https://garajeruta.marcovinir.dev
+      PANEL_RUTA: /panel
       REVALIDACION_SECRETO: sin-efecto-en-este-comando
     steps:
       - name: ¿Hay base de producción?

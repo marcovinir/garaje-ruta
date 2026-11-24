@@ -1,4 +1,7 @@
+from datetime import date
+
 from django.db.models import Max, Q
+from django.utils.dateparse import parse_date
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -39,6 +42,13 @@ PERMISO_POR_ACCION = {
 }
 
 
+def _fecha(valor: str | None) -> date | None:
+    try:
+        return parse_date(valor or "")
+    except ValueError:
+        return None
+
+
 def filtrar_panel(qs, params):
     if q := (params.get("q") or "").strip():
         qs = qs.filter(
@@ -52,9 +62,10 @@ def filtrar_panel(qs, params):
         qs = qs.filter(estado=estado)
     if params.get("agotado") == "1":
         qs = qs.filter(tipo=TipoArticulo.REPUESTO, repuesto__cantidad=0)
-    if desde := params.get("desde"):
+    # Una fecha que no es AAAA-MM-DD válida se ignora (como en filtrar_catalogo).
+    if desde := _fecha(params.get("desde")):
         qs = qs.filter(publicado_en__date__gte=desde)
-    if hasta := params.get("hasta"):
+    if hasta := _fecha(params.get("hasta")):
         qs = qs.filter(publicado_en__date__lte=hasta)
     if params.get("orden") == "actualizados":
         return qs.order_by("-actualizado_en", "-id")

@@ -19,6 +19,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 ALLOWED_HOSTS = _lista("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = _lista("CSRF_TRUSTED_ORIGINS")
 FRONTEND_URL = os.environ["FRONTEND_URL"].rstrip("/")
+PANEL_RUTA = os.environ["PANEL_RUTA"].rstrip("/")
 # Sin el secreto, Next no se enteraría de los cambios hasta su revalidate de respaldo.
 REVALIDACION_SECRETO = os.environ["REVALIDACION_SECRETO"]
 
