@@ -25,7 +25,14 @@ const OPCION =
  * Acciones rápidas de una fila: vender (con «Deshacer» en el aviso), editar, compartir y el menú
  * «Más» con estados, duplicar y eliminar. Cada acción se muestra solo con su permiso (§9).
  */
-export function BarraAcciones({ fila }: { fila: FilaPanel }) {
+export function BarraAcciones({
+  fila,
+  compacta = false,
+}: {
+  fila: FilaPanel;
+  /** En la tabla de escritorio: una sola línea, «Compartir» pasa al menú. */
+  compacta?: boolean;
+}) {
   const { puede } = useSesion();
   const qc = useQueryClient();
   const router = useRouter();
@@ -96,6 +103,7 @@ export function BarraAcciones({ fila }: { fila: FilaPanel }) {
   const stock = fila.cantidad ?? 0;
   const cambios = puede("articulos.cambiar_estado") ? transiciones(fila.estado) : [];
   const opciones = [
+    ...(compacta ? [{ etiqueta: "Compartir", hacer: () => void compartir() }] : []),
     ...cambios.map((c) => ({ etiqueta: c.etiqueta, hacer: () => estado.mutate(c.estado) })),
     ...(puedeVender && !esAuto && aLaVenta && stock > 1
       ? [{ etiqueta: "Vendí varios…", hacer: () => setVendiendoVarios(true) }]
@@ -123,7 +131,9 @@ export function BarraAcciones({ fila }: { fila: FilaPanel }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div
+      className={`flex items-center justify-end gap-2 ${compacta ? "flex-nowrap" : "flex-wrap"}`}
+    >
       {venta ? (
         <button
           type="button"
@@ -139,9 +149,11 @@ export function BarraAcciones({ fila }: { fila: FilaPanel }) {
           Editar
         </Link>
       ) : null}
-      <button type="button" onClick={compartir} className={BOTON_SECUNDARIO}>
-        Compartir
-      </button>
+      {compacta ? null : (
+        <button type="button" onClick={compartir} className={BOTON_SECUNDARIO}>
+          Compartir
+        </button>
+      )}
       {opciones.length ? (
         <div
           className="relative"

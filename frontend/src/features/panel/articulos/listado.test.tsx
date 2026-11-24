@@ -143,4 +143,15 @@ describe("listado de artículos", () => {
       "ascending",
     );
   });
+
+  it("en la tabla las acciones van en una línea y «Compartir» pasa al menú", async () => {
+    const usuario = userEvent.setup();
+    escritorio(true);
+    renderPanel(<PaginaArticulos />);
+    const tabla = await screen.findByRole("table");
+    const fila = within(tabla).getByRole("row", { name: /Toyota Corolla 2015/ });
+    expect(within(fila).queryByRole("button", { name: "Compartir" })).not.toBeInTheDocument();
+    await usuario.click(within(fila).getByRole("button", { name: "Más acciones" }));
+    expect(within(fila).getByRole("button", { name: "Compartir" })).toBeInTheDocument();
+  });
 });

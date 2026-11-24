@@ -40,11 +40,11 @@ En desarrollo, `sembrar` crea además `admin@garajeruta.test` y `colaborador@gar
 
 Inicio, listados de autos y repuestos con filtros en la URL (se comparten por WhatsApp tal cual), búsqueda, ficha con galería y Open Graph, página de «ya se vendió» con similares, `sitemap.xml` y `robots.txt`. Precio en colones y, debajo, su equivalente en dólares.
 
-| | Celular (360 px) | Escritorio (1280 px) |
-|---|---|---|
-| Inicio | <img src="docs/capturas/inicio-360.jpg" width="180" alt="Inicio en el celular"> | <img src="docs/capturas/inicio-1280.png" width="480" alt="Inicio en escritorio"> |
+|         | Celular (360 px)                                                                         | Escritorio (1280 px)                                                                                  |
+| ------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Inicio  | <img src="docs/capturas/inicio-360.jpg" width="180" alt="Inicio en el celular">          | <img src="docs/capturas/inicio-1280.png" width="480" alt="Inicio en escritorio">                      |
 | Listado | <img src="docs/capturas/autos-360.jpg" width="180" alt="Listado de autos en el celular"> | <img src="docs/capturas/autos-1280.png" width="480" alt="Listado de autos con filtros en escritorio"> |
-| Ficha | <img src="docs/capturas/ficha-360.jpg" width="180" alt="Ficha de un auto en el celular"> | <img src="docs/capturas/ficha-1280.png" width="480" alt="Ficha de un auto en escritorio"> |
+| Ficha   | <img src="docs/capturas/ficha-360.jpg" width="180" alt="Ficha de un auto en el celular"> | <img src="docs/capturas/ficha-1280.png" width="480" alt="Ficha de un auto en escritorio">             |
 
 Las fotos salen como marcador gris hasta que se cargan las de ejemplo en Cloudinary.
 
@@ -59,6 +59,30 @@ Para probarlo en local, poné el mismo `REVALIDACION_SECRETO` en `frontend/.env.
 ```bash
 docker compose exec -e REVALIDACION_SECRETO=<el mismo> -e FRONTEND_URL=http://host.docker.internal:3000 backend python manage.py shell
 ```
+
+## Panel
+
+Panel privado para publicar y administrar desde el celular, la tablet o la computadora:
+
+- **Listado:** tarjetas en el celular y tabla en escritorio, con filtros en la URL.
+- **Acciones rápidas:** «Vendido» o «Vendí 1» con **Deshacer**, reservar, ocultar, duplicar, eliminar y compartir.
+- **Formulario de autos y repuestos:** las fotos se comprimen en el navegador y suben directo a Cloudinary, se reordenan y la primera es la principal.
+- **Usuarios** con roles (admin, colaborador y demo de solo lectura), **configuración** del negocio y **catálogos**.
+
+|            | Celular (360 px)                                                                                         | Escritorio (1280 px)                                                                                          |
+| ---------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Listado    | <img src="docs/capturas/panel-listado-360.jpg" width="180" alt="Listado del panel en el celular">        | <img src="docs/capturas/panel-listado-1280.jpg" width="480" alt="Tabla de artículos del panel en escritorio"> |
+| Formulario | <img src="docs/capturas/panel-formulario-360.jpg" width="180" alt="Formulario de un auto en el celular"> | <img src="docs/capturas/panel-formulario-1280.jpg" width="480" alt="Formulario de un auto en escritorio">     |
+
+**Ruta:** en local es `/panel`. En producción se configura con `NEXT_PUBLIC_PANEL_RUTA` (frontend) y `PANEL_RUTA` (Django, para los enlaces de los correos) con el mismo valor.
+
+- Con otra ruta, `/panel` responde 404 y el panel lleva `X-Robots-Tag: noindex`.
+- Esto solo reduce el ruido de bots: la seguridad son los permisos de la API.
+- La variable se inyecta **al compilar**. En Git Bash hay que compilar con `MSYS_NO_PATHCONV=1`; si no, `/gestion-9x2` se convierte en una ruta de Windows.
+
+Para probarlo, entrá con el usuario demo (arriba). Puede ver todo, pero no cambiar nada.
+
+**Lighthouse** (build de producción, con sesión): Accesibilidad **100** en el login, el listado, el formulario y los usuarios.
 
 ## Estado
 
