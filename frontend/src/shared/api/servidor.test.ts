@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ErrorApi, pedir } from "./servidor";
+import { ErrorApi, pedir, pedirOpcional } from "./servidor";
 
 describe("pedir", () => {
   afterEach(() => {
@@ -33,5 +33,15 @@ describe("pedir", () => {
     const error = (await pedir("/api/v1/x/").catch((e: unknown) => e)) as ErrorApi;
     expect(error).toBeInstanceOf(ErrorApi);
     expect(error.status).toBe(0);
+  });
+
+  it("pedirOpcional devuelve null en un 404 y pedir lanza ErrorApi(404)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => new Response("", { status: 404 })),
+    );
+    await expect(pedirOpcional("/api/v1/articulos/9/")).resolves.toBeNull();
+    const error = (await pedir("/api/v1/articulos/9/").catch((e: unknown) => e)) as ErrorApi;
+    expect(error.status).toBe(404);
   });
 });

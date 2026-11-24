@@ -46,6 +46,15 @@ html {
 }
 
 /* Animaciones sencillas: solo si la persona no pidió menos movimiento. */
+/* Carrusel deslizable sin barra visible (se navega con el dedo, flechas o miniaturas). */
+.sin-barra {
+  scrollbar-width: none;
+}
+
+.sin-barra::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hoja de filtros (celular): un <dialog> modal pegado abajo. */
 .hoja-filtros:modal {
   margin: auto 0 0;
