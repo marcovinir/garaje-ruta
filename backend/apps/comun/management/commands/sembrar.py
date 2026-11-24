@@ -5,7 +5,8 @@ import random
 from datetime import timedelta
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -59,6 +60,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, reiniciar: bool = False, **opciones):
+        self.clave, self.clave_demo = self._claves()
         if Articulo.objects.exists() and not reiniciar:
             self.stdout.write("Ya hay datos de ejemplo. Usa --reiniciar para regenerarlos.")
             return
@@ -67,7 +69,7 @@ class Command(BaseCommand):
 
         self.rng = random.Random(42)
         self.ahora = timezone.now()
-        self.clave = os.environ.get("SEMILLA_PASSWORD", semillas.CLAVE_DEMO_POR_DEFECTO)
+        self.hoy = timezone.localdate(self.ahora)
 
         self.admin = self._usuarios()
         modelos = self._marcas_y_modelos()
@@ -101,11 +103,24 @@ class Command(BaseCommand):
 
     # --- Catálogos y usuarios -------------------------------------------------------------
 
+    def _claves(self) -> tuple[str, str]:
+        """La del demo se publica en el README; la del admin y el colaborador nunca."""
+        clave = os.environ.get("SEMILLA_PASSWORD")
+        if not clave:
+            if not settings.SEMILLA_CLAVE_LOCAL_PERMITIDA:
+                raise CommandError(
+                    "Define SEMILLA_PASSWORD (clave del admin y del colaborador) fuera de "
+                    "desarrollo: la clave por defecto es pública."
+                )
+            clave = semillas.CLAVE_LOCAL_POR_DEFECTO
+        return clave, os.environ.get("SEMILLA_PASSWORD_DEMO", semillas.CLAVE_DEMO_POR_DEFECTO)
+
     def _usuarios(self) -> Usuario:
         for email, nombre, apellidos, rol in semillas.USUARIOS:
             if not Usuario.objects.filter(email=email).exists():
+                clave = self.clave_demo if rol == "demo" else self.clave
                 Usuario.objects.crear_usuario(
-                    email, nombre, apellidos, rol, password=self.clave, activo=True
+                    email, nombre, apellidos, rol, password=clave, activo=True
                 )
         return Usuario.objects.get(email=semillas.ADMIN_EMAIL)
 
@@ -143,7 +158,7 @@ class Command(BaseCommand):
         articulos = []
         for i in range(TOTAL_AUTOS):
             modelo, (_, _, carroceria, cilindrada, combustible, base) = modelos[i % len(modelos)]
-            anio = rng.randint(2008, anio_actual)
+            anio = rng.randint(semillas.ANIO_MINIMO.get(modelo.nombre, 2008), anio_actual)
             antiguedad = anio_actual - anio
             km = max(5_000, antiguedad * rng.randint(9_000, 18_000))
             precio = max(2_500_000, int(base * (0.93**antiguedad) / 50_000) * 50_000)
@@ -172,7 +187,7 @@ class Command(BaseCommand):
                 traccion = "AWD"
 
             titulo = f"{modelo.marca.nombre} {modelo.nombre} {anio}"
-            publicado = self.ahora - timedelta(days=rng.randint(1, 200), hours=rng.randint(0, 23))
+            publicado = self.ahora - timedelta(days=rng.randint(1, 179), hours=rng.randint(0, 23))
             articulo = Articulo.objects.create(
                 tipo=TipoArticulo.AUTO,
                 titulo=titulo,
@@ -218,7 +233,16 @@ class Command(BaseCommand):
             cuantos = min(18, 6 + max(0, anio - 2008) * 12 // max(1, anio_actual - 2008))
             AutoEquipamiento.objects.bulk_create(
                 AutoEquipamiento(auto=auto, equipamiento=e)
-                for e in rng.sample(equipamiento, cuantos)
+                for e in rng.sample(
+                    [
+                        e
+                        for e in equipamiento
+                        if semillas.equipamiento_posible(
+                            e.nombre, carroceria, combustible, transmision, anio
+                        )
+                    ],
+                    cuantos,
+                )
             )
             self._fotos(articulo, semillas.FOTOS_AUTOS, rng.randint(4, 8), i)
             self._historial_creacion(articulo)
@@ -251,7 +275,7 @@ class Command(BaseCommand):
                     titulo=titulo, condicion=CondicionRepuesto(condicion).label.lower()
                 ),
                 precio_colones=precio,
-                publicado_en=self.ahora - timedelta(days=rng.randint(1, 200)),
+                publicado_en=self.ahora - timedelta(days=rng.randint(1, 179)),
                 creado_por=self.admin,
             )
             repuesto = Repuesto.objects.create(
@@ -328,13 +352,13 @@ class Command(BaseCommand):
 
     def _vistas(self, articulos: list[Articulo]) -> None:
         rng = self.rng
-        hoy = self.ahora.date()
+        hoy = self.hoy
         registros = []
         for articulo in articulos:
             base = 12 if articulo.destacado else 3
             for dia in range(DIAS_VISTAS):
                 fecha = hoy - timedelta(days=dia)
-                if fecha < articulo.publicado_en.date() or rng.random() < 0.35:
+                if fecha < timezone.localdate(articulo.publicado_en) or rng.random() < 0.35:
                     continue
                 registros.append(
                     VistaDiaria(articulo=articulo, fecha=fecha, cantidad=rng.randint(1, base))
@@ -343,7 +367,7 @@ class Command(BaseCommand):
 
     def _tipo_cambio(self) -> None:
         rng = self.rng
-        hoy = self.ahora.date()
+        hoy = self.hoy
         venta = Decimal("510.00")
         registros = []
         for dia in range(DIAS_TIPO_CAMBIO):

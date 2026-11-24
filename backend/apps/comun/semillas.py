@@ -1,7 +1,10 @@
 """Datos de ejemplo de Garaje Ruta (negocio ficticio) para `manage.py sembrar`."""
 
 ADMIN_EMAIL = "admin@garajeruta.test"
+# La del demo es pública (README). La del admin y el colaborador solo sirve en desarrollo:
+# fuera de él, `sembrar` exige SEMILLA_PASSWORD.
 CLAVE_DEMO_POR_DEFECTO = "Demo-Garaje-2026"
+CLAVE_LOCAL_POR_DEFECTO = "Local-Garaje-2026"
 
 USUARIOS = [
     (ADMIN_EMAIL, "Mariana", "Solís", "admin"),
@@ -52,6 +55,51 @@ MODELOS = [
     ("BYD", "Yuan Plus", "crossover", None, "Eléctrico", 16_400_000),
     ("BYD", "Song Plus", "suv", 1500, "Híbrido enchufable", 18_600_000),
 ]
+
+# Primer año en que existe el modelo (o su versión eléctrica/actual); el resto parte de 2008.
+ANIO_MINIMO = {
+    "Kona": 2019,
+    "Leaf": 2011,
+    "Dolphin": 2022,
+    "Yuan Plus": 2022,
+    "Song Plus": 2021,
+    "Tracker": 2020,
+    "Jimny": 2019,
+    "MU-X": 2014,
+    "BT-50": 2012,
+}
+
+# Equipamiento que solo tiene sentido en ciertos autos.
+SOLO_PICKUP = {"Cobertor de cajón"}
+SOLO_PICKUP_O_SUV = {"Estribos"}
+NO_ELECTRICO = {"Turbo"}
+SOLO_CAJA_DUAL = {"Caja de cambios dual"}
+DESDE_2016 = {
+    "Apple CarPlay",
+    "Android Auto",
+    "Cargador inalámbrico",
+    "Tablero digital",
+    "Cámara 360°",
+    "Monitor de punto ciego",
+    "Asistente de carril",
+    "Frenado autónomo de emergencia",
+}
+
+
+def equipamiento_posible(
+    nombre: str, carroceria: str, combustible: str, transmision: str, anio: int
+) -> bool:
+    """`carroceria` es el slug; `combustible` y `transmision`, los nombres del catálogo."""
+    if nombre in SOLO_PICKUP and carroceria != "pickup":
+        return False
+    if nombre in SOLO_PICKUP_O_SUV and carroceria not in ("pickup", "suv"):
+        return False
+    if nombre in NO_ELECTRICO and combustible == "Eléctrico":
+        return False
+    if nombre in SOLO_CAJA_DUAL and transmision != "Automática/Dual":
+        return False
+    return not (nombre in DESDE_2016 and anio < 2016)
+
 
 COLORES = ["Blanco", "Negro", "Gris oscuro", "Plateado", "Rojo", "Azul", "Beige", "Verde"]
 COLORES_INTERIOR = ["Negro", "Gris", "Beige"]
