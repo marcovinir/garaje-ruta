@@ -77,6 +77,17 @@ class Articulo(models.Model):
                 | Q(precio_anterior_colones__gt=F("precio_colones")),
                 name="articulo_precio_anterior_mayor",
             ),
+            models.CheckConstraint(
+                condition=Q(tipo__in=TipoArticulo.values), name="articulo_tipo_valido"
+            ),
+            models.CheckConstraint(
+                condition=Q(estado__in=EstadoArticulo.values), name="articulo_estado_valido"
+            ),
+            # §7: un repuesto nunca pasa a «Vendido»; se agota al llegar a cantidad 0.
+            models.CheckConstraint(
+                condition=~Q(tipo=TipoArticulo.REPUESTO, estado=EstadoArticulo.VENDIDO),
+                name="articulo_repuesto_no_vendido",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -134,6 +145,13 @@ class Auto(models.Model):
                 condition=Q(placa_termina_en__isnull=True) | Q(placa_termina_en__lte=9),
                 name="auto_placa_digito",
             ),
+            models.CheckConstraint(
+                condition=Q(procedencia__in=Procedencia.values), name="auto_procedencia_valida"
+            ),
+            models.CheckConstraint(
+                condition=Q(estado_general__in=EstadoGeneral.values),
+                name="auto_estado_general_valido",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -170,6 +188,12 @@ class Repuesto(models.Model):
 
     class Meta:
         db_table = "repuesto"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(condicion__in=CondicionRepuesto.values),
+                name="repuesto_condicion_valida",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.articulo.titulo

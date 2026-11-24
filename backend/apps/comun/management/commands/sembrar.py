@@ -368,11 +368,11 @@ class Command(BaseCommand):
     def _tipo_cambio(self) -> None:
         rng = self.rng
         hoy = self.hoy
-        venta = Decimal("510.00")
+        venta = Decimal("448.00")
         registros = []
         for dia in range(DIAS_TIPO_CAMBIO):
             venta = min(
-                Decimal("515"), max(Decimal("505"), venta + Decimal(rng.randint(-80, 80)) / 100)
+                Decimal("452"), max(Decimal("444"), venta + Decimal(rng.randint(-80, 80)) / 100)
             )
             registros.append(
                 TipoCambio(

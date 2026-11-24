@@ -93,3 +93,25 @@ def test_equipamiento_del_auto(db):
     aire = Equipamiento.objects.get(nombre="Aire acondicionado")
     a.auto.equipamiento.add(aire)
     assert list(a.auto.equipamiento.all()) == [aire]
+
+
+def test_repuesto_no_puede_quedar_vendido(db):
+    from apps.articulos.models import Articulo
+
+    r = crear_repuesto()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Articulo.objects.filter(pk=r.pk).update(estado="vendido")
+
+
+def test_estado_invalido_rechazado(db):
+    from apps.articulos.models import Articulo
+
+    a = crear_auto()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Articulo.objects.filter(pk=a.pk).update(estado="perdido")
+
+
+def test_condicion_invalida_rechazada(db):
+    r = crear_repuesto()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Repuesto.objects.filter(pk=r.pk).update(condicion="rota")
