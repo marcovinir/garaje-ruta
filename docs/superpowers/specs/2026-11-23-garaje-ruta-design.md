@@ -120,28 +120,31 @@ PK `id` bigint en todas las tablas (salvo las de subtipo, cuya PK es la FK a `ar
 | `combustible` | `nombre` (único) | Gasolina, Diésel, Híbrido, Eléctrico… |
 | `carroceria` | `nombre` (único), `slug` (único), `orden` | Sedán, Hatchback, SUV, Crossover, Pickup, Comercial… Son los accesos rápidos del inicio. |
 | `traccion` | `nombre` (único) | 4x2, 4x4, AWD. |
-| `grupo_equipamiento` | `nombre` (único), `orden` | Confort, Seguridad, Tecnología, Exterior. |
+| `grupo_equipamiento` | `nombre` (único), `orden` | Confort, Seguridad, Tecnología, Motor y manejo, Exterior. |
 | `equipamiento` | `grupo_id`, `nombre` (único), `orden`, `filtrable` | Aire acondicionado, cámara de retroceso, Apple CarPlay… Los `filtrable` salen como casillas en «Más filtros». |
 | `categoria_pieza` | `padre_id` (nullable, FK a sí misma), `nombre`, `slug` (único) | Árbol: Motor > Alternador. Filtrar por una categoría incluye sus descendientes. Profundidad máx. 3 (validada en el servicio). |
 
 Son tablas y no `choices` para que el admin agregue valores sin tocar el código.
 
 **Equipamiento inicial** (lo siembra una migración de datos; el admin agrega más desde el panel). ★ = filtrable.
-- **Confort:** aire acondicionado ★, climatizador automático, vidrios eléctricos ★, espejos eléctricos, cierre central, asientos de cuero ★, asientos eléctricos, asientos con calefacción, techo solar o panorámico ★, volante multifunción, control crucero ★, arranque por botón, llave inteligente.
-- **Seguridad:** frenos ABS, control de estabilidad, cámara de retroceso ★, sensores de retroceso ★, sensores delanteros, cámara 360°, alarma, monitor de punto ciego, asistente de carril, frenado autónomo de emergencia.
-- **Tecnología:** pantalla táctil, Apple CarPlay / Android Auto ★, Bluetooth, GPS, cargador inalámbrico, puertos USB, tablero digital.
-- **Exterior:** aros de lujo, faros LED, faros de niebla, rack de techo, tiro (enganche), estribos, cobertor de cajón (pickup), vidrios polarizados.
+- **Confort:** aire acondicionado ★, aire acondicionado climatizado, vidrios eléctricos ★, espejos eléctricos, retrovisores auto-retractables, cierre central, tapicería de cuero ★, asientos eléctricos, asiento con memoria, asientos con calefacción, techo solar o panorámico ★, volante multifunción (con control de radio), volante ajustable, control crucero ★, llave inteligente / botón de arranque, sensor de lluvia, desempañador trasero.
+- **Seguridad:** frenos ABS, control electrónico de estabilidad, control de descenso, cámara de retroceso ★, sensores de retroceso ★, sensores delanteros, cámara 360°, alarma, monitor de punto ciego, asistente de carril, frenado autónomo de emergencia.
+- **Tecnología:** pantalla táctil, Apple CarPlay ★, Android Auto ★, Bluetooth, radio con USB/AUX, GPS, cargador inalámbrico, computadora de viaje, tablero digital.
+- **Motor y manejo:** turbo, dirección hidráulica / electroasistida, caja de cambios dual (modo manual o paletas).
+- **Exterior:** aros de lujo, halógenos, faros LED, luces de xenón / bixenón, faros de niebla, rack de techo, tiro (enganche), estribos, cobertor de cajón (pickup), vidrios tintados / polarizados.
 
 El número de bolsas de aire es un dato del auto (`bolsas_aire`), no un equipamiento, porque se compara y filtra como número.
 
 **Referencia revisada:** `veinsausados.com` (2026-11-23). Sus fichas muestran kilometraje, transmisión, combustible, tracción, motor y pasajeros, precio «Antes / Ahora», calculadora de cuota, comparar, favoritos y compartir; **no** muestran lista de equipamiento. De ahí se tomaron tracción, pasajeros, precio anterior y los accesos rápidos por carrocería; el equipamiento se agrega porque es justo lo que el comprador pregunta por WhatsApp.
+
+**Referencia principal:** la ficha de `crautos.com` (p. ej. `cardetail.cfm?c=26881588`, revisada 2026-11-23), el formato que el comprador tico ya conoce. De ahí salen el equipamiento de arriba y los campos `estado_general`, `impuestos_pagados`, `placa_termina_en`, `precio_negociable`, `acepta_vehiculo`, colores exterior e interior y la «revisión técnica al día» (aquí `riteve_vence`, que es más útil que un sí/no). La ficha muestra también «visto N veces» (sale de `vista_diaria`) y la fecha de ingreso (`publicado_en`). No se toman la provincia ni los datos del vendedor: Garaje Ruta es un solo negocio con un solo WhatsApp.
 
 **Artículos**
 
 | Tabla | Campos | Notas |
 |---|---|---|
 | `articulo` | `tipo` (`auto`/`repuesto`), `titulo`, `descripcion`, `precio_colones`, `precio_anterior_colones` (nullable), `estado`, `destacado`, `publicado_en`, `creado_por` (FK usuario), `creado_en`, `actualizado_en` | `estado`: `disponible`, `reservado`, `vendido`, `oculto`. Checks `precio_colones >= 0` y `precio_anterior_colones > precio_colones`. Con precio anterior, la tarjeta muestra «Antes / Ahora» y entra en «Ofertas». |
-| `auto` | `articulo_id` (PK y FK), `modelo_id`, `anio`, `version`, `kilometraje`, `transmision_id`, `combustible_id`, `traccion_id`, `carroceria_id`, `color_exterior`, `color_interior`, `cilindrada_cc` (nullable: eléctricos), `puertas`, `pasajeros`, `bolsas_aire`, `unico_dueno`, `procedencia` (`agencia`/`importado`), `marchamo_al_dia`, `riteve_vence` (fecha, nullable), `acepta_vehiculo`, `precio_negociable` | Checks: `anio` entre 1950 y el año siguiente al actual, `kilometraje >= 0`, `pasajeros` y `puertas > 0`. La placa **no** se guarda ni se muestra (privacidad). |
+| `auto` | `articulo_id` (PK y FK), `modelo_id`, `anio`, `version`, `kilometraje`, `transmision_id`, `combustible_id`, `traccion_id`, `carroceria_id`, `color_exterior`, `color_interior`, `cilindrada_cc` (nullable: eléctricos), `puertas`, `pasajeros`, `bolsas_aire`, `unico_dueno`, `procedencia` (`agencia`/`importado`), `marchamo_al_dia`, `riteve_vence` (fecha, nullable), `impuestos_pagados`, `acepta_vehiculo`, `precio_negociable`, `estado_general` (`excelente`/`muy_bueno`/`bueno`/`regular`), `placa_termina_en` (0–9, nullable) | Checks: `anio` entre 1950 y el año siguiente al actual, `kilometraje >= 0`, `pasajeros` y `puertas > 0`. La placa completa **no** se guarda (privacidad); solo su último dígito, porque en Costa Rica define el día de restricción vehicular. |
 | `auto_equipamiento` | `auto_id`, `equipamiento_id` | M:N, único `(auto_id, equipamiento_id)`. |
 | `repuesto` | `articulo_id` (PK y FK), `categoria_pieza_id`, `condicion` (`nuevo`/`usado`), `cantidad`, `codigo_interno` (único, nullable), `numero_parte` | Check `cantidad >= 0`. |
 | `compatibilidad` | `repuesto_id`, `modelo_id`, `anio_desde`, `anio_hasta` | Check `anio_desde <= anio_hasta`. Un repuesto puede tener varias filas. |
