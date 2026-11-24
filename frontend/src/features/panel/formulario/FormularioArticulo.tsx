@@ -4,18 +4,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FormProvider, get, useForm } from "react-hook-form";
 
-import { ApiError, camposPlanos } from "@/shared/api/navegador";
+import { ApiError, api, camposPlanos } from "@/shared/api/navegador";
 import type { Catalogos } from "@/shared/api/tipos";
 
 import { CLAVE_ARTICULOS } from "../articulos/api";
 import { mensajeDe } from "../auth/api";
+import { EditorFotos } from "../fotos/EditorFotos";
+import { useFotos } from "../fotos/useFotos";
 import { rutaPanel } from "../rutaPanel";
 import { useAvisos } from "../ui/contextoAvisos";
+import { Dialogo } from "../ui/Dialogo";
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO, TARJETA } from "../ui/estilos";
 import { articulosApi, claveDetalle } from "./api";
+import { Seccion } from "./campos";
 import {
   aEscritura,
   cambios,
@@ -31,20 +35,23 @@ type Props = {
   tipo: "auto" | "repuesto";
   catalogos: Catalogos;
   detalle?: DetallePanel;
-  /** Columna derecha en escritorio (las fotos, tarea 7). */
-  lateral?: ReactNode;
 };
+
+type Resultado = { articulo: DetallePanel; errorFotos: string | null };
 
 /**
  * Formulario de autos y repuestos (§11): una columna en el celular, dos en escritorio
- * (datos | fotos). Crear = POST; editar = PATCH solo con lo que cambió. Los errores de Django,
- * también los anidados (`auto.anio`), quedan junto a su campo.
+ * (datos | fotos). Crear = POST; editar = PATCH solo con lo que cambió; después, las fotos con
+ * `PUT …/fotos/` si cambiaron. Los errores de Django, también los anidados (`auto.anio`),
+ * quedan junto a su campo.
  */
-export function FormularioArticulo({ tipo, catalogos, detalle, lateral }: Props) {
+export function FormularioArticulo({ tipo, catalogos, detalle }: Props) {
   const router = useRouter();
   const qc = useQueryClient();
   const { avisar } = useAvisos();
+  const fotos = useFotos(detalle?.fotos ?? []);
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+  const [confirmarFotos, setConfirmarFotos] = useState<ValoresFormulario | null>(null);
   const [inicial] = useState(() =>
     detalle ? desdeDetalle(detalle, catalogos) : valoresIniciales(tipo),
   );
@@ -55,16 +62,41 @@ export function FormularioArticulo({ tipo, catalogos, detalle, lateral }: Props)
   const { handleSubmit, setError, getValues, formState } = metodos;
 
   const guardar = useMutation({
-    mutationFn: async (valores: ValoresFormulario) => {
+    mutationFn: async (valores: ValoresFormulario): Promise<Resultado> => {
       const escritura = aEscritura(valores);
-      if (!detalle) return articulosApi.crear(escritura);
-      const cuerpo = cambios(aEscritura(inicial), escritura);
-      return Object.keys(cuerpo).length ? articulosApi.editar(detalle.id, cuerpo) : detalle;
+      let articulo: DetallePanel;
+      if (!detalle) {
+        articulo = await articulosApi.crear(escritura);
+      } else {
+        const cuerpo = cambios(aEscritura(inicial), escritura);
+        articulo = Object.keys(cuerpo).length
+          ? await articulosApi.editar(detalle.id, cuerpo)
+          : detalle;
+      }
+      // El artículo ya quedó guardado: un fallo en las fotos se avisa aparte.
+      if (fotos.cambiado()) {
+        try {
+          await api(`/panel/articulos/${articulo.id}/fotos/`, {
+            metodo: "PUT",
+            cuerpo: fotos.listas(),
+          });
+        } catch (error) {
+          return { articulo, errorFotos: mensajeDe(error) };
+        }
+      }
+      return { articulo, errorFotos: null };
     },
-    onSuccess: (guardado) => {
+    onSuccess: ({ articulo, errorFotos }) => {
       qc.invalidateQueries({ queryKey: CLAVE_ARTICULOS });
-      qc.removeQueries({ queryKey: claveDetalle(guardado.id) });
-      avisar(`Guardado: ${guardado.titulo}`);
+      qc.removeQueries({ queryKey: claveDetalle(articulo.id) });
+      if (errorFotos) {
+        avisar(`Se guardó «${articulo.titulo}», pero no las fotos: ${errorFotos}`, {
+          tipo: "error",
+        });
+        router.push(rutaPanel(`articulos/${articulo.id}`));
+        return;
+      }
+      avisar(`Guardado: ${articulo.titulo}`);
       router.push(rutaPanel("articulos"));
     },
     onError: (error) => {
@@ -93,7 +125,7 @@ export function FormularioArticulo({ tipo, catalogos, detalle, lateral }: Props)
   });
 
   // Avisar antes de salir con cambios sin guardar.
-  const sinGuardar = formState.isDirty && !guardar.isSuccess;
+  const sinGuardar = (formState.isDirty || fotos.cambiado()) && !guardar.isSuccess;
   useEffect(() => {
     if (!sinGuardar) return;
     const avisarSalida = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -101,17 +133,21 @@ export function FormularioArticulo({ tipo, catalogos, detalle, lateral }: Props)
     return () => window.removeEventListener("beforeunload", avisarSalida);
   }, [sinGuardar]);
 
+  function enviar(valores: ValoresFormulario) {
+    setErrorGeneral(null);
+    if (fotos.ocupado) return;
+    if (fotos.conError) {
+      setConfirmarFotos(valores);
+      return;
+    }
+    guardar.mutate(valores);
+  }
+
   return (
     <FormProvider {...metodos}>
       <form
         noValidate
-        onSubmit={handleSubmit(
-          (v) => {
-            setErrorGeneral(null);
-            guardar.mutate(v);
-          },
-          () => setErrorGeneral("Revisá los campos marcados."),
-        )}
+        onSubmit={handleSubmit(enviar, () => setErrorGeneral("Revisá los campos marcados."))}
         className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start"
       >
         <div className="flex min-w-0 flex-col gap-5">
@@ -123,15 +159,25 @@ export function FormularioArticulo({ tipo, catalogos, detalle, lateral }: Props)
           )}
         </div>
         <aside className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6">
-          {lateral}
+          <Seccion titulo="Fotos">
+            <EditorFotos fotos={fotos} />
+          </Seccion>
           <div className={`${TARJETA} flex flex-col gap-3 p-4`}>
             {errorGeneral ? (
               <p role="alert" className="text-rojo-oscuro font-semibold">
                 {errorGeneral}
               </p>
             ) : null}
-            <button type="submit" disabled={guardar.isPending} className={BOTON_PRIMARIO}>
-              {guardar.isPending ? "Guardando…" : "Guardar"}
+            <button
+              type="submit"
+              disabled={guardar.isPending || fotos.ocupado}
+              className={BOTON_PRIMARIO}
+            >
+              {fotos.ocupado
+                ? "Esperando las fotos…"
+                : guardar.isPending
+                  ? "Guardando…"
+                  : "Guardar"}
             </button>
             <Link href={rutaPanel("articulos")} className={BOTON_SECUNDARIO}>
               Cancelar
@@ -139,6 +185,20 @@ export function FormularioArticulo({ tipo, catalogos, detalle, lateral }: Props)
           </div>
         </aside>
       </form>
+      <Dialogo
+        abierto={confirmarFotos !== null}
+        titulo="¿Guardar sin esas fotos?"
+        textoConfirmar="Guardar sin esas fotos"
+        textoCancelar="Volver a las fotos"
+        alConfirmar={() => {
+          const valores = confirmarFotos;
+          setConfirmarFotos(null);
+          if (valores) guardar.mutate(valores);
+        }}
+        alCerrar={() => setConfirmarFotos(null)}
+      >
+        Algunas fotos no se pudieron subir. Podés reintentarlas o guardar solo las que sí subieron.
+      </Dialogo>
     </FormProvider>
   );
 }
