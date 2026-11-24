@@ -23,5 +23,5 @@ Variables en `.env.example` (copiar a `.env.local`).
 ## Decisiones
 
 - Las secciones con datos esperan la petición (`connection()`) dentro de `Suspense`: el build no llama a Django.
-- La ficha usa `instant = false`: espera sus datos (cacheados) antes de responder, así una URL vieja recibe un **308** real y un id inexistente un **404**.
+- Con Cache Components una página empieza a enviarse con **200** antes de saber si el artículo existe (ni `instant = false` lo evita). Por eso el **308** a la URL canónica y el **404** de las fichas los responde `src/proxy.ts`, que consulta a Django antes de renderizar. Si Django no responde, deja pasar y la página muestra su aviso.
 - Dentro de `'use cache'` un error cambia de clase: los 404 esperables se piden con `pedirOpcional()`, que devuelve `null`.

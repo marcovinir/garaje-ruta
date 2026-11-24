@@ -51,9 +51,9 @@ export function HojaFiltros({ activos, children }: Props) {
         className="hoja-filtros bg-tarjeta text-tinta"
       >
         <div className="border-borde bg-tarjeta sticky top-0 z-10 flex items-center justify-between border-b px-4 py-2">
-          <h1 id="titulo-hoja-filtros" className="titulo text-2xl">
+          <h2 id="titulo-hoja-filtros" className="titulo text-2xl">
             Filtros
-          </h1>
+          </h2>
           <button
             type="button"
             onClick={() => hoja.current?.close()}

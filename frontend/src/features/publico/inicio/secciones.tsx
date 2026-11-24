@@ -41,7 +41,7 @@ const REJILLA = "grid gap-5 sm:grid-cols-2 lg:grid-cols-4";
 
 export async function Ofertas() {
   await connection();
-  const pagina = await obtenerArticulos({ ofertas: "1" }).catch(() => null);
+  const pagina = await obtenerArticulos({ ofertas: "1", tipo: "auto" }).catch(() => null);
   if (pagina === null) return <MensajeError />;
   if (!pagina.results.length) return null;
   return (

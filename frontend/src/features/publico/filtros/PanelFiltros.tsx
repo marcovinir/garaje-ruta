@@ -8,7 +8,7 @@ import { FormularioGet } from "./FormularioGet";
 import { type Filtros, type TipoListado, aQueryString } from "./filtrosDesdeUrl";
 
 const CAMPO =
-  "bg-campo border-borde text-tinta min-h-11 w-full rounded-xl border px-3 focus-visible:border-rojo";
+  "bg-campo border-borde-campo text-tinta min-h-11 w-full rounded-xl border px-3 focus-visible:border-rojo";
 const ETIQUETA = "text-sm font-semibold";
 const KILOMETRAJES = [30000, 60000, 100000, 150000, 200000];
 
@@ -290,20 +290,8 @@ export function PanelFiltros({ tipo, id, filtros, catalogos }: Props) {
         <CamposRepuesto id={id} filtros={filtros} catalogos={catalogos} />
       )}
       <div className="grid grid-cols-2 gap-3">
-        <Numero
-          {...{ id, filtros }}
-          nombre="precio_min"
-          etiqueta="Precio desde (₡)"
-          min={0}
-          step={100000}
-        />
-        <Numero
-          {...{ id, filtros }}
-          nombre="precio_max"
-          etiqueta="Precio hasta (₡)"
-          min={0}
-          step={100000}
-        />
+        <Numero {...{ id, filtros }} nombre="precio_min" etiqueta="Precio desde (₡)" min={0} />
+        <Numero {...{ id, filtros }} nombre="precio_max" etiqueta="Precio hasta (₡)" min={0} />
       </div>
       <Casilla
         id={`${id}-ofertas`}

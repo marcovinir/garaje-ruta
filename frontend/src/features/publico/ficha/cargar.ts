@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 
 import { obtenerFicha } from "@/shared/api/datos";
 import { type Ficha, type FichaCompleta, esFichaCompleta } from "@/shared/api/tipos";
-import { urlFoto } from "@/shared/lib/cloudinary";
+import { FOTO_PENDIENTE, urlFoto } from "@/shared/lib/cloudinary";
 import { colones, miles } from "@/shared/lib/dinero";
 import { idDeSlug, urlAbsoluta } from "@/shared/lib/rutas";
 
@@ -53,9 +53,11 @@ function imagenOg(f: FichaCompleta) {
   const principal = f.foto ?? f.fotos[0];
   if (!principal) return undefined;
   const url = urlFoto(principal.public_id, { ancho: 1200, alto: 630, recorte: true });
+  // Sin Cloudinary configurado la URL es el marcador SVG, que WhatsApp y Facebook no muestran.
+  if (url === FOTO_PENDIENTE) return undefined;
   return [
     {
-      url: url.startsWith("/") ? urlAbsoluta(url) : url,
+      url,
       width: 1200,
       height: 630,
       alt: f.titulo,
@@ -69,7 +71,9 @@ function imagenOg(f: FichaCompleta) {
  */
 export async function metadataFicha(slug: string): Promise<Metadata> {
   const id = idDeSlug(slug);
-  const ficha = id === null ? null : await obtenerFicha(id).catch(() => null);
+  // undefined = Django no respondió (se usa el título del sitio); null = no existe.
+  const ficha = id === null ? null : await obtenerFicha(id).catch(() => undefined);
+  if (ficha === undefined) return {};
   if (ficha === null) return { title: "Artículo no encontrado" };
   if (!esFichaCompleta(ficha)) {
     return {

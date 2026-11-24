@@ -14,7 +14,7 @@ function desplazamiento(): ScrollBehavior {
 }
 
 const FLECHA =
-  "bg-tarjeta/90 text-tinta hover:bg-tarjeta absolute top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md sm:inline-flex disabled:opacity-0";
+  "bg-tarjeta/90 text-tinta hover:bg-tarjeta absolute top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md sm:inline-flex aria-disabled:cursor-default aria-disabled:opacity-30";
 
 /**
  * Galería: en el celular se desliza con el dedo (scroll-snap); en escritorio, flechas y
@@ -80,7 +80,8 @@ export function Galeria({ fotos, titulo }: Props) {
             <button
               type="button"
               aria-label="Foto anterior"
-              disabled={actual === 0}
+              // aria-disabled (no disabled) para que el foco no se pierda al llegar al extremo.
+              aria-disabled={actual === 0}
               onClick={() => ir(actual - 1)}
               className={`${FLECHA} left-3`}
             >
@@ -89,7 +90,7 @@ export function Galeria({ fotos, titulo }: Props) {
             <button
               type="button"
               aria-label="Foto siguiente"
-              disabled={actual === total - 1}
+              aria-disabled={actual === total - 1}
               onClick={() => ir(actual + 1)}
               className={`${FLECHA} right-3`}
             >

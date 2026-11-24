@@ -11,12 +11,30 @@ import { HojaFiltros } from "./HojaFiltros";
 import { Orden } from "./Orden";
 import { Paginacion } from "./Paginacion";
 import { PanelFiltros } from "./PanelFiltros";
-import { type TipoListado, cantidadFiltros, filtrosDesdeUrl } from "./filtrosDesdeUrl";
+import {
+  type TipoListado,
+  aQueryString,
+  cantidadFiltros,
+  filtrosDesdeUrl,
+  hrefSin,
+} from "./filtrosDesdeUrl";
 
 export type ParamsUrl = Record<string, string | string[] | undefined>;
 
 const BASE = { auto: "/autos", repuesto: "/repuestos" } as const;
 const NOMBRES = { auto: ["auto", "autos"], repuesto: ["repuesto", "repuestos"] } as const;
+
+/**
+ * Canónica del listado: los filtros apuntan a la página base (son variaciones del mismo
+ * contenido), pero cada página de la paginación es la suya propia.
+ */
+export async function canonicaListado(
+  tipo: TipoListado,
+  searchParams: Promise<ParamsUrl>,
+): Promise<string> {
+  const { page } = filtrosDesdeUrl(await searchParams, tipo);
+  return `${BASE[tipo]}${page ? aQueryString({ page }) : ""}`;
+}
 
 export function cantidad(n: number, tipo: TipoListado): string {
   return `${n} ${NOMBRES[tipo][n === 1 ? 0 : 1]}`;
@@ -75,16 +93,30 @@ async function Resultados({
           </ul>
         ) : (
           <div className="bg-tarjeta border-borde flex flex-col items-center gap-3 rounded-2xl border px-5 py-12 text-center">
-            <p className="titulo text-2xl">Sin resultados</p>
-            <p className="text-tinta-suave">
-              No hay {NOMBRES[tipo][1]} con esos filtros. Probá quitando alguno.
-            </p>
-            <Link
-              href={base}
-              className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
-            >
-              Ver todos los {NOMBRES[tipo][1]} →
-            </Link>
+            {filtros.page ? (
+              <>
+                <p className="titulo text-2xl">Esa página no existe</p>
+                <Link
+                  href={hrefSin(base, filtros, "page")}
+                  className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
+                >
+                  Ir a la primera página →
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="titulo text-2xl">Sin resultados</p>
+                <p className="text-tinta-suave">
+                  No hay {NOMBRES[tipo][1]} con esos filtros. Probá quitando alguno.
+                </p>
+                <Link
+                  href={base}
+                  className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
+                >
+                  Ver todos los {NOMBRES[tipo][1]} →
+                </Link>
+              </>
+            )}
           </div>
         )}
         <Paginacion base={base} filtros={filtros} total={pagina.count} />

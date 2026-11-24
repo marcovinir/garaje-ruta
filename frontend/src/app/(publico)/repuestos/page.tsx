@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 
-import { Listado, type ParamsUrl } from "@/features/publico/filtros/Listado";
+import { Listado, type ParamsUrl, canonicaListado } from "@/features/publico/filtros/Listado";
 
-export const metadata: Metadata = {
-  title: "Repuestos",
-  description:
-    "Repuestos nuevos y usados con su compatibilidad clara: buscá por la marca, el modelo y el año de tu vehículo.",
-  alternates: { canonical: "/repuestos" },
-};
+type Props = { searchParams: Promise<ParamsUrl> };
 
-export default function Repuestos({ searchParams }: { searchParams: Promise<ParamsUrl> }) {
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  return {
+    title: "Repuestos",
+    description:
+      "Repuestos nuevos y usados con su compatibilidad clara: buscá por la marca, el modelo y el año de tu vehículo.",
+    alternates: { canonical: await canonicaListado("repuesto", searchParams) },
+  };
+}
+
+export default function Repuestos({ searchParams }: Props) {
   return (
     <Listado
       tipo="repuesto"

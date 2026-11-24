@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
+import { Suspense } from "react";
 
 import { obtenerConfiguracion, obtenerSimilares } from "@/shared/api/datos";
 import {
@@ -12,7 +14,9 @@ import { urlAbsoluta } from "@/shared/lib/rutas";
 import { enlaceWhatsappGeneral } from "@/shared/lib/whatsapp";
 
 import { BotonWhatsapp, IconoWhatsapp } from "../componentes/BotonWhatsapp";
+import { Esqueleto } from "../componentes/Esqueleto";
 import { EtiquetaEstado } from "../componentes/EtiquetaEstado";
+import { MensajeError } from "../componentes/MensajeError";
 import { Precio } from "../componentes/Precio";
 import { TarjetaArticulo } from "../componentes/TarjetaArticulo";
 import { Compartir } from "./Compartir";
@@ -123,7 +127,7 @@ function Completa({
   const listado = LISTADO[ficha.tipo];
   const fotos = ficha.fotos.length ? ficha.fotos : ficha.foto ? [ficha.foto] : [];
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-6 pb-32 sm:px-6 lg:pb-12">
+    <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-6 pb-12 sm:px-6">
       <ContadorVistas id={ficha.id} />
       <div className="flex flex-col gap-4">
         <nav aria-label="Ruta de navegación" className="text-tinta-suave text-sm">
@@ -198,7 +202,7 @@ function Completa({
       <Similares tarjetas={similares} />
       {whatsapp ? (
         // En el celular el botón queda fijo abajo, con el precio a la vista.
-        <div className="bg-tarjeta/95 border-borde fixed inset-x-0 bottom-0 z-30 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+        <div className="barra-fija bg-tarjeta/95 border-borde fixed inset-x-0 bottom-0 z-30 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
             <div className="flex min-w-0 flex-col">
               <span className="titulo text-2xl leading-none">{colones(ficha.precio_colones)}</span>
@@ -223,7 +227,18 @@ function Completa({
 type Props = { seccion: Seccion; slug: string };
 
 export async function PaginaFicha({ seccion, slug }: Props) {
-  const ficha = await cargarFicha(seccion, slug);
+  // Si Django falla, un aviso dentro de la página; notFound() y la redirección siguen de largo.
+  const ficha = await cargarFicha(seccion, slug).catch((error: unknown) => {
+    unstable_rethrow(error);
+    return null;
+  });
+  if (ficha === null) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <MensajeError texto="No pudimos cargar este artículo. Probá de nuevo en un momento." />
+      </div>
+    );
+  }
   const [configuracion, similares] = await Promise.all([
     obtenerConfiguracion().catch(() => null),
     obtenerSimilares(ficha.id).catch((): Tarjeta[] => []),
@@ -233,4 +248,29 @@ export async function PaginaFicha({ seccion, slug }: Props) {
     return <NoDisponible ficha={ficha} similares={similares} whatsapp={whatsapp} />;
   }
   return <Completa ficha={ficha} similares={similares} whatsapp={whatsapp} />;
+}
+
+function EsqueletoFicha() {
+  return (
+    <div className="mx-auto grid max-w-6xl gap-8 px-4 pt-12 pb-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <Esqueleto alto="aspect-[4/3]" />
+      <Esqueleto alto="h-80" />
+    </div>
+  );
+}
+
+type PropsRuta = { seccion: Seccion; params: Promise<{ slug: string }> };
+
+async function ConParams({ seccion, params }: PropsRuta) {
+  const { slug } = await params;
+  return <PaginaFicha seccion={seccion} slug={slug} />;
+}
+
+/** La página de la ruta: el 308 y el 404 ya los decidió `proxy.ts`; aquí se renderiza en streaming. */
+export function RutaFicha(props: PropsRuta) {
+  return (
+    <Suspense fallback={<EsqueletoFicha />}>
+      <ConParams {...props} />
+    </Suspense>
+  );
 }
