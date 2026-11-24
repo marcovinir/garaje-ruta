@@ -40,7 +40,7 @@
 - Modify: `frontend/src/app/layout.tsx`, `frontend/.env.example`, `frontend/next.config.ts` (`images.loaderFile`)
 - Create: `frontend/src/shared/lib/cargador-imagenes.ts`
 - Test: `frontend/src/shared/lib/*.test.ts`, `frontend/src/shared/api/servidor.test.ts`
-- Also: versionar `.agents/skills/modern-web-guidance/` y `skills-lock.json`; agregar `.claude/skills/` a `.gitignore` (el enlace que crea el instalador apunta a una ruta absoluta de la máquina); crear las issues de las tareas 2–7 y enlazarlas en la #1.
+- Also: crear las issues de las tareas 1–7 y enlazarlas en la #1. Ya están en `main` (PR #50): el logo en `frontend/public/marca/`, `modern-web-guidance` en `.agents/skills/` con `skills-lock.json`, y `.claude/skills/` ignorado (el enlace del instalador apunta a una ruta absoluta de cada máquina; en otra se recrea con `npx modern-web-guidance@latest install`).
 
 **Interfaces:**
 - Produces: `globals.css` con `@theme` de Tailwind v4: colores `--color-fondo`, `--color-tarjeta`, `--color-borde`, `--color-campo`, `--color-tinta`, `--color-tinta-suave`, `--color-carbon`, `--color-rojo`, `--color-rojo-oscuro`, `--color-rojo-suave` y los 8 de estados (valores de Global Constraints); fuentes `--font-titulos` (Saira Condensed) y `--font-texto` (Saira); clase utilitaria `.titulo` (mayúsculas, 800); y el bloque de animaciones con `prefers-reduced-motion`.
@@ -55,7 +55,7 @@
 
 - [ ] **Step 1: Pruebas que fallan:** `colones(6500000) === "₡6\u202F500\u202F000"`; `dolares(14500) === "≈ US$14\u202F500"` y `dolares(null) === null`; `urlFoto` con y sin recorte; `urlFoto` sin nube → placeholder; `enlaceWhatsapp` codifica tilde, `–` y la URL; `idDeSlug("toyota-corolla-2015-12") === 12`, `idDeSlug("abc") === null`; `api()` con `fetch` simulado envía `X-Servidor-Next` y lanza `ErrorApi(503)`.
 - [ ] **Step 2:** `npm test` → FALLA.
-- [ ] **Step 3:** Implementar; copiar los 4 SVG del logo (están en el lienzo de mockups; también en `C:\Users\marco\Proyectos\garaje-ruta\frontend\public\marca\` si ya se copiaron en el PR del plan) y crear `icon.svg` desde `logo-simbolo.svg`.
+- [ ] **Step 3:** Implementar; crear `icon.svg` desde `frontend/public/marca/logo-simbolo.svg` y un `foto-pendiente.svg` (silueta gris de auto) para cuando no hay nube de Cloudinary.
 - [ ] **Step 4:** `npm test`, `lint`, `format:check`, `build` → PASAN. Commit, PR.
 
 ### Task 2: Componentes compartidos de la web
