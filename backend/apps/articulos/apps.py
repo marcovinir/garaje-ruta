@@ -1,0 +1,6 @@
+from django.apps import AppConfig
+
+
+class ArticulosConfig(AppConfig):
+    name = "apps.articulos"
+    verbose_name = "Artículos"
