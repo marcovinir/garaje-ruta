@@ -1,6 +1,6 @@
 # Garaje Ruta — Diseño
 
-**Fecha:** 2026-11-23 · **Estado:** borrador para aprobación · **Repo:** `marcovinir/garaje-ruta` (público)
+**Fecha:** 2026-11-23 · **Estado:** aprobado por Marco (2026-11-23) · **Repo:** `marcovinir/garaje-ruta` (público)
 **Documento de origen:** `Proyectos/proyectos-clientes/catalogo-autos-repuestos.md` (v2, como «MotorPatio»). Este diseño lo reemplaza donde no coincidan.
 
 ## 1. Intención
@@ -38,7 +38,7 @@ Frente a **Sonrisa Viva** (el proyecto anterior de Marco, con el mismo backend D
 
 **Etapa 3 (extra, si da el tiempo):** historial de cambios visible, reportes (vendidos por mes, días promedio en venta, más vistos) y etiquetas imprimibles con QR. **El modelo de datos ya las soporta desde el inicio** (ver §6), para no migrar después.
 
-**No-objetivos:** pagos en línea, facturación electrónica, publicación automática en Facebook, chat propio, app nativa, varias sucursales, otros idiomas, cuentas de compradores.
+**No-objetivos:** pagos en línea, facturación electrónica, publicación automática en Facebook, chat propio, app nativa, varias sucursales, otros idiomas, cuentas de compradores; calculadora de cuota, comparar autos y favoritos (vistos en Veinsa y CRAutos, descartados por Marco).
 
 **Anti-objetivos (fracaso aunque funcione):**
 - Que dos «Vendí 1» simultáneos dejen una cantidad negativa o vendan más de lo que hay.
