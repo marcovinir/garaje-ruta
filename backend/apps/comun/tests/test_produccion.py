@@ -17,6 +17,7 @@ ENTORNO = {
     "ALLOWED_HOSTS": "garaje-ruta-api.vercel.app",
     "CSRF_TRUSTED_ORIGINS": "https://garajeruta.marcovinir.dev",
     "FRONTEND_URL": "https://garajeruta.marcovinir.dev",
+    "PANEL_RUTA": "/panel",
     "REVALIDACION_SECRETO": "solo-para-pruebas",
 }
 
@@ -65,6 +66,13 @@ def test_produccion_exige_frontend_url():
     r = _cargar(sin="FRONTEND_URL")
     assert r.returncode != 0
     assert "FRONTEND_URL" in r.stderr
+
+
+def test_produccion_exige_panel_ruta():
+    # Sin ella, el enlace de activación apuntaría a /panel, que en producción da 404.
+    r = _cargar(sin="PANEL_RUTA")
+    assert r.returncode != 0
+    assert "PANEL_RUTA" in r.stderr
 
 
 def test_produccion_exige_csrf_trusted_origins():

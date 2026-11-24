@@ -293,7 +293,15 @@ def guardar_fotos(articulo: Articulo, fotos: list[dict], usuario) -> list[Foto]:
         raise ValidationError(f"Máximo {MAX_FOTOS} fotos por artículo.")
     if any(not f["public_id"].startswith((PREFIJO_PROPIO, PREFIJO_EJEMPLO)) for f in fotos):
         raise ValidationError("Foto no válida.")
+    ids = [f["public_id"] for f in fotos]
+    if len(set(ids)) != len(ids):
+        raise ValidationError("Hay fotos repetidas.")
     articulo = _bloquear(articulo)
+    # Una foto propia se borra de Cloudinary al quitarla: si otro artículo la usara, le
+    # quedaría rota. Las de ejemplo nunca se borran y sí se pueden compartir.
+    ajenas = Foto.objects.filter(public_id__in=[p for p in ids if p.startswith(PREFIJO_PROPIO)])
+    if ajenas.exclude(articulo=articulo).exists():
+        raise ValidationError("Esa foto ya es de otro artículo.")
     anteriores = list(articulo.fotos.values_list("public_id", flat=True))
     articulo.fotos.all().delete()
     nuevas = Foto.objects.bulk_create(

@@ -51,6 +51,7 @@ jobs:
           ALLOWED_HOSTS: garaje-ruta-api.vercel.app
           CSRF_TRUSTED_ORIGINS: https://garajeruta.marcovinir.dev
           FRONTEND_URL: https://garajeruta.marcovinir.dev
+          PANEL_RUTA: /panel
           REVALIDACION_SECRETO: ci-no-secreto
 
   frontend:

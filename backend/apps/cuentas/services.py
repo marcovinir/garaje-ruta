@@ -26,7 +26,7 @@ class TokenInvalido(Exception):
 def enlace_para(usuario: Usuario, tipo: Literal["activar", "restablecer"]) -> str:
     uid = urlsafe_base64_encode(force_bytes(usuario.pk))
     token = default_token_generator.make_token(usuario)
-    return f"{settings.FRONTEND_URL}/panel/{tipo}/{uid}/{token}"
+    return f"{settings.FRONTEND_URL}{settings.PANEL_RUTA}/{tipo}/{uid}/{token}"
 
 
 def enviar_enlace_activacion(usuario: Usuario, notificador: Notificador | None = None) -> None:

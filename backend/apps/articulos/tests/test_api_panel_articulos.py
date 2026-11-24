@@ -218,3 +218,10 @@ def test_detalle_del_panel(admin):
     datos = admin.get(f"{URL}{r.id}/").json()
     assert datos["repuesto"]["compatibilidades"][0]["modelo"] == corolla.id
     assert datos["repuesto"]["categoria_pieza"] == r.repuesto.categoria_pieza_id
+
+
+def test_listado_del_panel_ignora_fechas_invalidas(admin):
+    crear_auto()
+    assert admin.get(f"{URL}?desde=abc").status_code == 200
+    assert admin.get(f"{URL}?hasta=2026-99-99").json()["count"] == 1
+    assert admin.get(f"{URL}?desde=2999-01-01").json()["count"] == 0
