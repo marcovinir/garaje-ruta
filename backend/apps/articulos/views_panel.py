@@ -2,9 +2,10 @@ from django.db.models import Max, Q
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.actividad.models import TipoCambio
-from apps.comun.permisos import tiene_permiso
+from apps.comun.permisos import tiene_alguno, tiene_permiso
 from apps.cuentas.permisos import (
     ARTICULOS_CAMBIAR_ESTADO,
     ARTICULOS_CREAR,
@@ -15,13 +16,16 @@ from apps.cuentas.permisos import (
 )
 
 from . import services
+from .fotos import obtener_almacen
 from .models import Articulo, EstadoArticulo, TipoArticulo
 from .selectors import articulo_con_relaciones
 from .serializers_panel import (
     ArticuloEscrituraSerializer,
     DetallePanelSerializer,
     FilaPanelSerializer,
+    FotoEntradaSerializer,
 )
+from .serializers_publicos import foto_json
 
 PERMISO_POR_ACCION = {
     "create": ARTICULOS_CREAR,
@@ -31,6 +35,7 @@ PERMISO_POR_ACCION = {
     "estado": ARTICULOS_CAMBIAR_ESTADO,
     "vender": VENTAS_REGISTRAR,
     "deshacer_venta": VENTAS_REGISTRAR,
+    "fotos": ARTICULOS_EDITAR,
 }
 
 
@@ -62,7 +67,7 @@ class ArticuloPanelViewSet(
     viewsets.GenericViewSet,
 ):
     permission_classes = [tiene_permiso(ARTICULOS_VER)]
-    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
 
     def get_permissions(self):
         codigo = PERMISO_POR_ACCION.get(self.action)
@@ -134,3 +139,19 @@ class ArticuloPanelViewSet(
         articulo = self.get_object()
         services.deshacer_ultima_venta(articulo, request.user)
         return Response(self._fila(articulo))
+
+    @action(detail=True, methods=["put"])
+    def fotos(self, request, pk=None):
+        entrada = FotoEntradaSerializer(data=request.data, many=True)
+        entrada.is_valid(raise_exception=True)
+        nuevas = services.guardar_fotos(self.get_object(), entrada.validated_data, request.user)
+        return Response([foto_json(f) for f in nuevas])
+
+
+class FirmaFotosView(APIView):
+    """Firma para que el navegador suba directo a Cloudinary."""
+
+    permission_classes = [tiene_alguno(ARTICULOS_CREAR, ARTICULOS_EDITAR)]
+
+    def post(self, request):
+        return Response(obtener_almacen().firmar_subida())

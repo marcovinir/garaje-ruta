@@ -4,3 +4,4 @@ from .local import *  # noqa: F403
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 NOTIFICADOR = "apps.comun.notificaciones.NotificadorMemoria"
+ALMACEN_FOTOS = "apps.articulos.fotos.AlmacenFotosMemoria"

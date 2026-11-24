@@ -210,3 +210,9 @@ class DetallePanelSerializer(serializers.ModelSerializer):
             for c in repuesto.compatibilidades.all()
         ]
         return datos
+
+
+class FotoEntradaSerializer(serializers.Serializer):
+    public_id = serializers.CharField(max_length=255)
+    ancho = serializers.IntegerField(min_value=1)
+    alto = serializers.IntegerField(min_value=1)

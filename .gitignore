@@ -19,3 +19,6 @@ playwright-report/
 
 # Herramientas
 .superpowers/
+
+# Fotos de ejemplo generadas (se suben a Cloudinary)
+backend/semillas/fotos/
