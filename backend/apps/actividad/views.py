@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import TipoCambio
+from .services import registrar_vista
 
 DIAS_PARA_DESACTUALIZADO = 3
 
@@ -30,3 +31,13 @@ class TipoCambioView(APIView):
                 "desactualizado": tipo.fecha < limite,
             }
         )
+
+
+class VistasView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_scope = "vistas"
+
+    def post(self, request, pk: int):
+        registrar_vista(pk)
+        return Response(status=204)

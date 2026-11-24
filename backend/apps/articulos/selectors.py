@@ -140,3 +140,63 @@ def filtrar_catalogo(qs: QuerySet[Articulo], params: Mapping[str, str]) -> Query
         if orden not in ORDENES:
             return qs.order_by(F("rango").desc(), F("similitud").desc(), "-publicado_en")
     return qs.order_by(*ORDENES.get(orden, ORDENES["recientes"]))
+
+
+def estado_publico(articulo: Articulo) -> str:
+    """disponible | reservado | vendido | agotado | no_disponible (oculto)."""
+    if articulo.estado == EstadoArticulo.OCULTO:
+        return "no_disponible"
+    if articulo.estado == EstadoArticulo.VENDIDO:
+        return "vendido"
+    if articulo.agotado:
+        return "agotado"
+    return articulo.estado
+
+
+def similares(articulo: Articulo, limite: int = 3) -> list[Articulo]:
+    """§7: del mismo tipo y visibles, por niveles de parecido; se completa con destacados."""
+    base = visibles_publico().filter(tipo=articulo.tipo).exclude(id=articulo.id)
+    if articulo.tipo == TipoArticulo.AUTO:
+        auto = articulo.auto
+        margen = articulo.precio_colones * 3 // 10
+        niveles = [
+            base.filter(auto__modelo_id=auto.modelo_id),
+            base.filter(auto__modelo__marca_id=auto.modelo.marca_id),
+            base.filter(
+                precio_colones__gte=articulo.precio_colones - margen,
+                precio_colones__lte=articulo.precio_colones + margen,
+            ),
+        ]
+    else:
+        repuesto = articulo.repuesto
+        modelos = list(repuesto.compatibilidades.values_list("modelo_id", flat=True))
+        misma_categoria = base.filter(repuesto__categoria_pieza_id=repuesto.categoria_pieza_id)
+        niveles = [
+            misma_categoria.filter(repuesto__compatibilidades__modelo_id__in=modelos).distinct(),
+            misma_categoria,
+        ]
+    niveles += [base.filter(destacado=True), base]
+
+    elegidos: list[Articulo] = []
+    vistos: set[int] = set()
+    for nivel in niveles:
+        for candidato in nivel.order_by("-publicado_en", "-id"):
+            if len(elegidos) == limite:
+                return elegidos
+            if candidato.id not in vistos:
+                vistos.add(candidato.id)
+                elegidos.append(candidato)
+    return elegidos
+
+
+def articulo_con_relaciones() -> QuerySet[Articulo]:
+    return Articulo.objects.select_related(
+        "auto__modelo__marca",
+        "auto__transmision",
+        "auto__combustible",
+        "auto__traccion",
+        "auto__carroceria",
+        "repuesto__categoria_pieza__padre",
+    ).prefetch_related(
+        "fotos", "auto__equipamiento__grupo", "repuesto__compatibilidades__modelo__marca"
+    )

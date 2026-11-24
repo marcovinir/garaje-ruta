@@ -1,5 +1,6 @@
 """Lo que ve el público de un artículo. El tipo de cambio llega en el contexto."""
 
+from django.db.models import Sum
 from rest_framework import serializers
 
 from .models import Articulo, TipoArticulo
@@ -76,4 +77,96 @@ class TarjetaSerializer(serializers.ModelSerializer):
             "condicion": repuesto.condicion,
             "categoria": repuesto.categoria_pieza.nombre,
             "compatibilidad_resumen": resumen_compatibilidad(repuesto),
+        }
+
+
+def equipamiento_agrupado(auto) -> list[dict]:
+    grupos: dict[tuple, list] = {}
+    for e in sorted(auto.equipamiento.all(), key=lambda e: (e.grupo.orden, e.orden, e.nombre)):
+        grupos.setdefault((e.grupo.orden, e.grupo.nombre), []).append(e.nombre)
+    return [{"grupo": nombre, "items": items} for (_, nombre), items in sorted(grupos.items())]
+
+
+class FichaSerializer(TarjetaSerializer):
+    estado_publico = serializers.SerializerMethodField()
+    fotos = serializers.SerializerMethodField()
+    vistas_total = serializers.SerializerMethodField()
+
+    class Meta(TarjetaSerializer.Meta):
+        fields = [
+            *TarjetaSerializer.Meta.fields,
+            "estado_publico",
+            "descripcion",
+            "publicado_en",
+            "fotos",
+            "vistas_total",
+        ]
+
+    def get_estado_publico(self, articulo: Articulo) -> str:
+        from .selectors import estado_publico
+
+        return estado_publico(articulo)
+
+    def get_fotos(self, articulo: Articulo) -> list[dict]:
+        return [foto_json(f) for f in articulo.fotos.all()]
+
+    def get_vistas_total(self, articulo: Articulo) -> int:
+        return articulo.vistas.aggregate(total=Sum("cantidad"))["total"] or 0
+
+    def get_auto(self, articulo: Articulo) -> dict | None:
+        if articulo.tipo != TipoArticulo.AUTO:
+            return None
+        a = articulo.auto
+        return {
+            "marca": a.modelo.marca.nombre,
+            "modelo": a.modelo.nombre,
+            "anio": a.anio,
+            "version": a.version,
+            "kilometraje": a.kilometraje,
+            "transmision": a.transmision.nombre,
+            "combustible": a.combustible.nombre,
+            "traccion": a.traccion.nombre,
+            "carroceria": a.carroceria.nombre,
+            "color_exterior": a.color_exterior,
+            "color_interior": a.color_interior,
+            "cilindrada_cc": a.cilindrada_cc,
+            "puertas": a.puertas,
+            "pasajeros": a.pasajeros,
+            "bolsas_aire": a.bolsas_aire,
+            "unico_dueno": a.unico_dueno,
+            "procedencia": a.procedencia,
+            "marchamo_al_dia": a.marchamo_al_dia,
+            "riteve_vence": a.riteve_vence.isoformat() if a.riteve_vence else None,
+            "impuestos_pagados": a.impuestos_pagados,
+            "acepta_vehiculo": a.acepta_vehiculo,
+            "precio_negociable": a.precio_negociable,
+            "estado_general": a.estado_general,
+            "placa_termina_en": a.placa_termina_en,
+            "equipamiento": equipamiento_agrupado(a),
+        }
+
+    def get_repuesto(self, articulo: Articulo) -> dict | None:
+        if articulo.tipo != TipoArticulo.REPUESTO:
+            return None
+        r = articulo.repuesto
+        categoria = r.categoria_pieza
+        return {
+            "condicion": r.condicion,
+            "categoria": {
+                "nombre": categoria.nombre,
+                "padre": categoria.padre.nombre if categoria.padre else None,
+            },
+            "cantidad": r.cantidad,
+            "numero_parte": r.numero_parte,
+            "compatibilidades": [
+                {
+                    "marca": c.modelo.marca.nombre,
+                    "modelo": c.modelo.nombre,
+                    "anio_desde": c.anio_desde,
+                    "anio_hasta": c.anio_hasta,
+                }
+                for c in sorted(
+                    r.compatibilidades.all(), key=lambda c: (c.anio_desde, c.modelo.nombre)
+                )
+            ],
         }

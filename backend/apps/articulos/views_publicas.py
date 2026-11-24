@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -5,8 +6,15 @@ from rest_framework.views import APIView
 
 from apps.actividad.models import TipoCambio
 
-from .selectors import filtrar_catalogo, visibles_publico
-from .serializers_publicos import TarjetaSerializer
+from .presentacion import ruta_publica
+from .selectors import (
+    articulo_con_relaciones,
+    estado_publico,
+    filtrar_catalogo,
+    similares,
+    visibles_publico,
+)
+from .serializers_publicos import FichaSerializer, TarjetaSerializer
 
 MAX_DESTACADOS = 8
 
@@ -37,3 +45,34 @@ class DestacadosView(VistaPublica):
             )
         datos = TarjetaSerializer(destacados, many=True, context=self.get_serializer_context())
         return Response(datos.data)
+
+
+class FichaView(VistaPublica):
+    def get(self, request, pk: int):
+        articulo = get_object_or_404(articulo_con_relaciones(), pk=pk)
+        estado = estado_publico(articulo)
+        if estado in ("disponible", "reservado"):
+            return Response(FichaSerializer(articulo, context=self.get_serializer_context()).data)
+        datos = {"id": articulo.id, "tipo": articulo.tipo, "estado_publico": estado}
+        if estado != "no_disponible":
+            datos.update(titulo=articulo.titulo, ruta=ruta_publica(articulo))
+        return Response(datos)
+
+
+class SimilaresView(VistaPublica):
+    def get(self, request, pk: int):
+        articulo = get_object_or_404(articulo_con_relaciones(), pk=pk)
+        datos = TarjetaSerializer(
+            similares(articulo), many=True, context=self.get_serializer_context()
+        )
+        return Response(datos.data)
+
+
+class SitemapView(VistaPublica):
+    def get(self, request):
+        return Response(
+            [
+                {"ruta": ruta_publica(a), "actualizado_en": a.actualizado_en}
+                for a in visibles_publico().order_by("-publicado_en")
+            ]
+        )
