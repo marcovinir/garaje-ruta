@@ -2,7 +2,7 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
-import { pedir } from "./servidor";
+import { ErrorApi, pedir } from "./servidor";
 import type {
   Catalogos,
   Configuracion,
@@ -23,7 +23,14 @@ export async function obtenerArticulos(params: Record<string, string>): Promise<
   cacheTag("articulos");
   cacheLife("minutes");
   const query = new URLSearchParams(Object.entries(params).sort()).toString();
-  return pedir(`/api/v1/articulos/${query ? `?${query}` : ""}`);
+  // Una página fuera de rango (`?page=99`) es «sin resultados», no un error. Se resuelve aquí
+  // porque un error que sale de 'use cache' pierde su clase.
+  return pedir<Pagina<Tarjeta>>(`/api/v1/articulos/${query ? `?${query}` : ""}`).catch((e) => {
+    if (e instanceof ErrorApi && e.status === 404) {
+      return { count: 0, next: null, previous: null, results: [] };
+    }
+    throw e;
+  });
 }
 
 export async function obtenerDestacados(): Promise<Tarjeta[]> {

@@ -46,6 +46,23 @@ html {
 }
 
 /* Animaciones sencillas: solo si la persona no pidió menos movimiento. */
+/* Hoja de filtros (celular): un <dialog> modal pegado abajo. */
+.hoja-filtros:modal {
+  margin: auto 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 88dvh;
+  padding: 0 0 env(safe-area-inset-bottom);
+  border-radius: 1.25rem 1.25rem 0 0;
+  overscroll-behavior: contain;
+}
+
+.hoja-filtros::backdrop {
+  background: rgb(21 21 23 / 0.5);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   a,
   button {
@@ -86,6 +103,16 @@ html {
     to {
       opacity: 1;
       transform: none;
+    }
+  }
+
+  .hoja-filtros[open] {
+    transition: translate 0.3s ease-out;
+  }
+
+  @starting-style {
+    .hoja-filtros[open] {
+      translate: 0 100%;
     }
   }
 }
