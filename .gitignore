@@ -22,3 +22,6 @@ playwright-report/
 
 # Fotos de ejemplo generadas (se suben a Cloudinary)
 backend/semillas/fotos/
+
+# Enlace local del instalador de modern-web-guidance (apunta a una ruta absoluta de cada máquina)
+.claude/skills/
