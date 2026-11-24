@@ -1,10 +1,7 @@
 import { Suspense } from "react";
 
+import { Esqueleto } from "@/features/publico/componentes/Esqueleto";
 import { Accesos, Carrocerias, Destacados, Ofertas } from "@/features/publico/inicio/secciones";
-
-function Esqueleto({ alto = "h-72" }: { alto?: string }) {
-  return <div aria-hidden="true" className={`bg-campo ${alto} animate-pulse rounded-2xl`} />;
-}
 
 export default function Inicio() {
   return (
