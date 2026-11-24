@@ -94,6 +94,9 @@ ALMACEN_FOTOS = "apps.articulos.fotos.AlmacenCloudinary"
 REVALIDACION_SECRETO = os.environ.get("REVALIDACION_SECRETO", "")
 REVALIDADOR = "apps.comun.revalidacion.RevalidadorHttp"
 
+# Fuentes del tipo de cambio, en orden (el BCCR se agregará al inicio).
+TIPO_CAMBIO_PROVEEDORES = ["apps.actividad.tipo_cambio.OpenErApi"]
+
 NOTIFICADOR = "apps.comun.notificaciones.NotificadorCorreo"
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL", "Garaje Ruta <no-responder@garajeruta.test>"
