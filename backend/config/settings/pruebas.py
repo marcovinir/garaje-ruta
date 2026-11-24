@@ -6,3 +6,4 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 NOTIFICADOR = "apps.comun.notificaciones.NotificadorMemoria"
 ALMACEN_FOTOS = "apps.articulos.fotos.AlmacenFotosMemoria"
 REVALIDADOR = "apps.comun.revalidacion.RevalidadorMemoria"
+TIPO_CAMBIO_PROVEEDORES = ["apps.actividad.tipo_cambio.ProveedorTipoCambioFijo"]

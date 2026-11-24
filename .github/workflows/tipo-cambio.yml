@@ -1,0 +1,51 @@
+name: Tipo de cambio
+
+# Todos los días a las 6:00 de Costa Rica (12:00 UTC) guarda el tipo de cambio del dólar.
+# Hasta que exista la base de producción (Plan 5) termina en verde sin hacer nada.
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: base-de-produccion
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.produccion
+      DATABASE_URL: ${{ secrets.DATABASE_URL_MIGRACIONES }}
+      # Obligatorias en producción pero sin efecto en este comando.
+      SECRET_KEY: solo-para-comandos-de-gestion
+      ALLOWED_HOSTS: localhost
+      CSRF_TRUSTED_ORIGINS: https://garajeruta.marcovinir.dev
+      FRONTEND_URL: https://garajeruta.marcovinir.dev
+      REVALIDACION_SECRETO: sin-efecto-en-este-comando
+    steps:
+      - name: ¿Hay base de producción?
+        id: base
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Sin base de producción todavía: no se hace nada."
+            echo "lista=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "lista=true" >> "$GITHUB_OUTPUT"
+          fi
+        working-directory: .
+      - if: steps.base.outputs.lista == 'true'
+        uses: actions/checkout@v4
+      - if: steps.base.outputs.lista == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - if: steps.base.outputs.lista == 'true'
+        run: pip install -r requirements.txt
+      - if: steps.base.outputs.lista == 'true'
+        run: python manage.py actualizar_tipo_cambio
