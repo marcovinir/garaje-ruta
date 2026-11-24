@@ -55,7 +55,7 @@ export function Encabezado() {
         </div>
         <nav aria-label="Principal" className="hidden gap-5 font-medium lg:flex">
           {ENLACES.map((e) => (
-            <Link key={e.href} href={e.href} className="hover:text-rojo">
+            <Link key={e.href} href={e.href} className="hover:text-rojo-oscuro">
               {e.texto}
             </Link>
           ))}
