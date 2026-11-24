@@ -90,7 +90,7 @@ export function PaginaArticulos() {
             <TablaPanel
               filas={consulta.data.results}
               puedeEditar={puedeEditar}
-              acciones={(fila) => <BarraAcciones fila={fila} />}
+              acciones={(fila) => <BarraAcciones fila={fila} compacta />}
             />
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
