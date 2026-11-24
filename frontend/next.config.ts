@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Django usa barra final en sus URLs: Next no debe quitarla antes del rewrite.
   skipTrailingSlashRedirect: true,
+  // Las fotos son public_id de Cloudinary: las transforma Cloudinary, no Next.
+  images: { loader: "custom", loaderFile: "./src/shared/lib/cargador-imagenes.ts" },
   async rewrites() {
     return reescriturasApi(process.env.BACKEND_URL ?? "http://localhost:8000");
   },
