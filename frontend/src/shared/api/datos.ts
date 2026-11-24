@@ -2,7 +2,7 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
-import { ErrorApi, pedir } from "./servidor";
+import { pedir, pedirOpcional } from "./servidor";
 import type {
   Catalogos,
   Configuracion,
@@ -23,14 +23,11 @@ export async function obtenerArticulos(params: Record<string, string>): Promise<
   cacheTag("articulos");
   cacheLife("minutes");
   const query = new URLSearchParams(Object.entries(params).sort()).toString();
-  // Una página fuera de rango (`?page=99`) es «sin resultados», no un error. Se resuelve aquí
-  // porque un error que sale de 'use cache' pierde su clase.
-  return pedir<Pagina<Tarjeta>>(`/api/v1/articulos/${query ? `?${query}` : ""}`).catch((e) => {
-    if (e instanceof ErrorApi && e.status === 404) {
-      return { count: 0, next: null, previous: null, results: [] };
-    }
-    throw e;
-  });
+  // Una página fuera de rango (`?page=99`) es «sin resultados», no un error.
+  const pagina = await pedirOpcional<Pagina<Tarjeta>>(
+    `/api/v1/articulos/${query ? `?${query}` : ""}`,
+  );
+  return pagina ?? { count: 0, next: null, previous: null, results: [] };
 }
 
 export async function obtenerDestacados(): Promise<Tarjeta[]> {
@@ -40,11 +37,12 @@ export async function obtenerDestacados(): Promise<Tarjeta[]> {
   return pedir("/api/v1/destacados/");
 }
 
-export async function obtenerFicha(id: number): Promise<Ficha> {
+/** `null` si el artículo no existe (404), para poder responder `notFound()`. */
+export async function obtenerFicha(id: number): Promise<Ficha | null> {
   "use cache";
   cacheTag(`articulo-${id}`, "articulos");
   cacheLife("minutes");
-  return pedir(`/api/v1/articulos/${id}/`);
+  return pedirOpcional<Ficha>(`/api/v1/articulos/${id}/`);
 }
 
 export async function obtenerSimilares(id: number): Promise<Tarjeta[]> {
