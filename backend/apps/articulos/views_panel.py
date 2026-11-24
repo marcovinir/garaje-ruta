@@ -1,15 +1,17 @@
 from django.db.models import Max, Q
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.actividad.models import TipoCambio
 from apps.comun.permisos import tiene_permiso
 from apps.cuentas.permisos import (
+    ARTICULOS_CAMBIAR_ESTADO,
     ARTICULOS_CREAR,
     ARTICULOS_EDITAR,
     ARTICULOS_ELIMINAR,
     ARTICULOS_VER,
+    VENTAS_REGISTRAR,
 )
 
 from . import services
@@ -26,6 +28,9 @@ PERMISO_POR_ACCION = {
     "duplicar": ARTICULOS_CREAR,
     "partial_update": ARTICULOS_EDITAR,
     "destroy": ARTICULOS_ELIMINAR,
+    "estado": ARTICULOS_CAMBIAR_ESTADO,
+    "vender": VENTAS_REGISTRAR,
+    "deshacer_venta": VENTAS_REGISTRAR,
 }
 
 
@@ -101,3 +106,31 @@ class ArticuloPanelViewSet(
     def duplicar(self, request, pk=None):
         copia = services.duplicar_articulo(self.get_object(), request.user)
         return self._detalle(copia, status.HTTP_201_CREATED)
+
+    def _fila(self, articulo: Articulo) -> dict:
+        articulo = self.get_queryset().get(pk=articulo.pk)
+        return FilaPanelSerializer(articulo, context=self.get_serializer_context()).data
+
+    @action(detail=True, methods=["post"])
+    def estado(self, request, pk=None):
+        nuevo = serializers.CharField().run_validation(request.data.get("estado"))
+        articulo = services.cambiar_estado(self.get_object(), nuevo, request.user)
+        return Response(self._fila(articulo))
+
+    @action(detail=True, methods=["post"])
+    def vender(self, request, pk=None):
+        cantidad = serializers.IntegerField(min_value=1).run_validation(
+            request.data.get("cantidad", 1)
+        )
+        articulo = self.get_object()
+        venta = services.vender(articulo, request.user, cantidad)
+        return Response(
+            {"venta_id": venta.id, "articulo": self._fila(articulo)},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["post"], url_path="deshacer-venta")
+    def deshacer_venta(self, request, pk=None):
+        articulo = self.get_object()
+        services.deshacer_ultima_venta(articulo, request.user)
+        return Response(self._fila(articulo))
