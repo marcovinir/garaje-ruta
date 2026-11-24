@@ -73,7 +73,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "apps.comun.paginacion.PaginacionEstandar",
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "apps.comun.errores.manejador_excepciones",
-    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_CLASSES": ["apps.comun.throttles.LimitePorAlcance"],
     "DEFAULT_THROTTLE_RATES": {"login": "10/min", "publico": "120/min", "vistas": "30/min"},
 }
 
@@ -96,6 +96,9 @@ REVALIDADOR = "apps.comun.revalidacion.RevalidadorHttp"
 
 # Fuentes del tipo de cambio, en orden (el BCCR se agregará al inicio).
 TIPO_CAMBIO_PROVEEDORES = ["apps.actividad.tipo_cambio.OpenErApi"]
+
+# Next se identifica con X-Servidor-Next para no agotar el límite por IP (vacío = nadie).
+SERVIDOR_NEXT_SECRETO = os.environ.get("SERVIDOR_NEXT_SECRETO", "")
 
 NOTIFICADOR = "apps.comun.notificaciones.NotificadorCorreo"
 DEFAULT_FROM_EMAIL = os.environ.get(

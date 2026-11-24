@@ -38,3 +38,22 @@ def test_dos_ventas_simultaneas_de_la_ultima_unidad():
     assert sorted(resultados) == ["Solo quedan 0.", "vendió"]
     assert Venta.objects.filter(articulo_id=articulo_id).count() == 1
     assert Articulo.objects.get(id=articulo_id).repuesto.cantidad == 0
+
+
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
+def test_editar_mientras_se_vende_no_pisa_la_venta():
+    """Editar con una copia vieja no debe devolver el auto a «disponible» ni subir el stock."""
+    from apps.articulos.services import editar_articulo
+    from apps.articulos.tests.fabricas import crear_auto
+
+    auto_id = crear_auto().id
+    rep_id = crear_repuesto(cantidad=3).id
+    usuario = usuario_admin()
+    viejo_auto = Articulo.objects.get(id=auto_id)
+    viejo_rep = Articulo.objects.get(id=rep_id)
+    vender(Articulo.objects.get(id=auto_id), usuario, 1)
+    vender(Articulo.objects.get(id=rep_id), usuario, 2)
+    editar_articulo(viejo_auto, {"precio_colones": 6_000_000}, usuario)
+    editar_articulo(viejo_rep, {"titulo": "Alternador revisado"}, usuario)
+    assert Articulo.objects.get(id=auto_id).estado == "vendido"
+    assert Articulo.objects.get(id=rep_id).repuesto.cantidad == 1
