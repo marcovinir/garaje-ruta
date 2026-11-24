@@ -16,7 +16,10 @@ def _aplanar(errores: dict, prefijo: str = "") -> dict[str, list[str]]:
     """{"repuesto": {"cantidad": [...]}} → {"repuesto.cantidad": [...]}: un error por campo."""
     campos: dict[str, list[str]] = {}
     for clave, valor in errores.items():
-        ruta = f"{prefijo}{clave}"
+        # El error general de un objeto anidado (p. ej. una lista vacía) va a ese objeto.
+        ruta = (
+            prefijo.rstrip(".") if clave == "non_field_errors" and prefijo else f"{prefijo}{clave}"
+        )
         if isinstance(valor, dict):
             campos.update(_aplanar(valor, f"{ruta}."))
         else:
