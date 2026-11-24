@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.actividad.models import AccionHistorial, HistorialCambio
 from apps.comun.errores import Conflicto
+from apps.comun.revalidacion import revalidar_articulo
 
 from .fotos import MAX_FOTOS, PREFIJO_EJEMPLO, PREFIJO_PROPIO, borrables, obtener_almacen
 from .models import (
@@ -116,6 +117,7 @@ def crear_articulo(datos: dict, usuario) -> Articulo:
     )
     _guardar_subtipo(articulo, datos)
     registrar(articulo, usuario, AccionHistorial.CREAR)
+    revalidar_articulo(articulo.id)
     return articulo
 
 
@@ -132,6 +134,7 @@ def editar_articulo(articulo: Articulo, datos: dict, usuario) -> Articulo:
     cambios = {c: [antes[c], despues[c]] for c in despues if antes.get(c) != despues[c]}
     if cambios:
         registrar(articulo, usuario, AccionHistorial.EDITAR, cambios)
+    revalidar_articulo(articulo.id)
     return articulo
 
 
@@ -162,6 +165,7 @@ def duplicar_articulo(articulo: Articulo, usuario) -> Articulo:
             for c in repuesto.compatibilidades.all()
         )
     registrar(copia, usuario, AccionHistorial.CREAR, {"duplicado_de": articulo.id})
+    revalidar_articulo(copia.id)
     return copia
 
 
@@ -170,8 +174,10 @@ def eliminar_articulo(articulo: Articulo, usuario) -> None:
     if articulo.ventas.exists():
         raise Conflicto(CON_VENTAS)
     fotos = list(articulo.fotos.values_list("public_id", flat=True))
+    articulo_id = articulo.id
     articulo.delete()
     _borrar_fotos_al_confirmar(fotos)
+    revalidar_articulo(articulo_id)
 
 
 TRANSICIONES = {
@@ -206,6 +212,7 @@ def cambiar_estado(articulo: Articulo, nuevo: str, usuario) -> Articulo:
     articulo.estado = nuevo
     articulo.save(update_fields=["estado", "actualizado_en"])
     registrar(articulo, usuario, AccionHistorial.CAMBIAR_ESTADO, {"antes": antes, "despues": nuevo})
+    revalidar_articulo(articulo.id)
     return articulo
 
 
@@ -240,6 +247,7 @@ def vender(articulo: Articulo, usuario, cantidad: int = 1):
         AccionHistorial.VENDER,
         {"cantidad": cantidad, "precio_unitario_colones": articulo.precio_colones},
     )
+    revalidar_articulo(articulo.id)
     return venta
 
 
@@ -264,6 +272,7 @@ def deshacer_ultima_venta(articulo: Articulo, usuario) -> None:
         {"cantidad": venta.cantidad, "fecha_venta": venta.fecha.isoformat()},
     )
     venta.delete()
+    revalidar_articulo(articulo.id)
 
 
 def _borrar_fotos_al_confirmar(public_ids) -> None:
@@ -298,4 +307,5 @@ def guardar_fotos(articulo: Articulo, fotos: list[dict], usuario) -> list[Foto]:
     registrar(
         articulo, usuario, AccionHistorial.FOTOS, {"antes": len(anteriores), "despues": len(fotos)}
     )
+    revalidar_articulo(articulo.id)
     return nuevas

@@ -90,6 +90,10 @@ SEMILLA_CLAVE_LOCAL_PERMITIDA = False
 # Fotos en Cloudinary (CLOUDINARY_URL); las pruebas usan el almacén en memoria.
 ALMACEN_FOTOS = "apps.articulos.fotos.AlmacenCloudinary"
 
+# Revalidación de Next por etiquetas (vacío = no avisa, p. ej. en local).
+REVALIDACION_SECRETO = os.environ.get("REVALIDACION_SECRETO", "")
+REVALIDADOR = "apps.comun.revalidacion.RevalidadorHttp"
+
 NOTIFICADOR = "apps.comun.notificaciones.NotificadorCorreo"
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL", "Garaje Ruta <no-responder@garajeruta.test>"

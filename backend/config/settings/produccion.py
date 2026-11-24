@@ -19,6 +19,8 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 ALLOWED_HOSTS = _lista("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = _lista("CSRF_TRUSTED_ORIGINS")
 FRONTEND_URL = os.environ["FRONTEND_URL"].rstrip("/")
+# Sin el secreto, Next no se enteraría de los cambios hasta su revalidate de respaldo.
+REVALIDACION_SECRETO = os.environ["REVALIDACION_SECRETO"]
 
 # El pooler de Supabase en modo transacción no admite sentencias preparadas (psycopg 3).
 DATABASES["default"].setdefault("OPTIONS", {})["prepare_threshold"] = None
