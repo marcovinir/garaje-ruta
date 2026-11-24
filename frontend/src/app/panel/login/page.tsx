@@ -1,4 +1,14 @@
-// Provisional: la tarea 3 (#69) pone aquí el formulario de ingreso.
+import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { PaginaLogin } from "@/features/panel/auth/PaginaLogin";
+
+export const metadata: Metadata = { title: "Ingresar" };
+
 export default function Login() {
-  return <h1 className="titulo p-8 text-4xl">Ingresar</h1>;
+  return (
+    <Suspense>
+      <PaginaLogin />
+    </Suspense>
+  );
 }

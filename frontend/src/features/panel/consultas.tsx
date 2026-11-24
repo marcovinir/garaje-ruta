@@ -15,19 +15,24 @@ const esDeAcceso = (error: unknown): error is ApiError =>
  * Django responde 403 (no 401) sin sesión, igual que sin permiso. Ante un 401/403 se vuelve a
  * pedir `auth/yo`: si también falla, la sesión terminó y se va al login con `siguiente`.
  */
-export function crearCliente(irA: (ruta: string) => void): QueryClient {
+const enElNavegador = () => window.location.pathname + window.location.search;
+
+export function crearCliente(
+  irA: (ruta: string) => void,
+  rutaActual: () => string = enElNavegador,
+): QueryClient {
   let revisando = false;
   async function alFallar(error: unknown) {
     if (!esDeAcceso(error) || revisando) return;
     const login = rutaPanel("login");
-    if (window.location.pathname.startsWith(login)) return;
+    const aqui = rutaActual();
+    if (aqui.startsWith(login)) return;
     revisando = true;
     try {
       await api("/auth/yo/");
     } catch (otro) {
       if (esDeAcceso(otro)) {
         cliente.clear();
-        const aqui = window.location.pathname + window.location.search;
         irA(`${login}?motivo=sesion&siguiente=${encodeURIComponent(aqui)}`);
       }
     } finally {
@@ -51,12 +56,14 @@ export function crearCliente(irA: (ruta: string) => void): QueryClient {
 
 export function ProveedorConsultas({
   irA,
+  rutaActual,
   children,
 }: {
   irA: (ruta: string) => void;
+  rutaActual?: () => string;
   children: ReactNode;
 }) {
-  const [cliente] = useState(() => crearCliente(irA));
+  const [cliente] = useState(() => crearCliente(irA, rutaActual));
   return <QueryClientProvider client={cliente}>{children}</QueryClientProvider>;
 }
 
