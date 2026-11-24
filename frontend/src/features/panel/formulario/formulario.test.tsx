@@ -262,3 +262,78 @@ describe("formulario de artículos", () => {
     );
   });
 });
+
+describe("fotos en el formulario", () => {
+  const conFotos: DetallePanel = {
+    ...DETALLE,
+    fotos: [
+      { public_id: "garaje-ruta/articulos/a", ancho: 2000, alto: 1500 },
+      { public_id: "garaje-ruta/articulos/b", ancho: 2000, alto: 1500 },
+    ],
+  };
+
+  it("reordenar manda el orden nuevo en el PUT de fotos (la primera es la principal)", async () => {
+    const u = userEvent.setup();
+    let orden: string[] = [];
+    servidor.use(
+      http.get("*/api/v1/panel/articulos/101/", () => HttpResponse.json(conFotos)),
+      http.put("*/api/v1/panel/articulos/101/fotos/", async ({ request }) => {
+        orden = ((await request.json()) as { public_id: string }[]).map((f) => f.public_id);
+        return HttpResponse.json([]);
+      }),
+    );
+    renderPanel(<PaginaEditar id={101} />);
+    await u.click(await screen.findByRole("button", { name: "Mover la foto 1 después" }));
+    await guardar(u);
+    await waitFor(() =>
+      expect(orden).toEqual(["garaje-ruta/articulos/b", "garaje-ruta/articulos/a"]),
+    );
+  });
+
+  it("sin cambios en las fotos no las vuelve a guardar", async () => {
+    const u = userEvent.setup();
+    let fotosGuardadas = false;
+    servidor.use(
+      http.get("*/api/v1/panel/articulos/101/", () => HttpResponse.json(conFotos)),
+      http.patch("*/api/v1/panel/articulos/101/", () => HttpResponse.json(conFotos)),
+      http.put("*/api/v1/panel/articulos/101/fotos/", () => {
+        fotosGuardadas = true;
+        return HttpResponse.json([]);
+      }),
+    );
+    renderPanel(<PaginaEditar id={101} />);
+    const titulo = await screen.findByLabelText("Título");
+    await u.type(titulo, " SE");
+    await guardar(u);
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/panel/articulos"));
+    expect(fotosGuardadas).toBe(false);
+  });
+
+  it("con una foto en error pide confirmar «Guardar sin esas fotos» (Review Focus 3)", async () => {
+    const u = userEvent.setup();
+    let guardado = false;
+    servidor.use(
+      http.get("*/api/v1/panel/articulos/101/", () => HttpResponse.json(conFotos)),
+      http.post("*/api/v1/panel/fotos/firma/", () =>
+        HttpResponse.json({ detalle: "x" }, { status: 500 }),
+      ),
+      http.patch("*/api/v1/panel/articulos/101/", () => {
+        guardado = true;
+        return HttpResponse.json(conFotos);
+      }),
+    );
+    renderPanel(<PaginaEditar id={101} />);
+    await screen.findByLabelText("Título");
+    await u.upload(
+      screen.getByLabelText("Elegir de la galería"),
+      new File(["x"], "nueva.jpg", { type: "image/jpeg" }),
+    );
+    await screen.findByRole("button", { name: "Reintentar la foto 3" });
+    await u.type(screen.getByLabelText("Título"), " SE");
+    await guardar(u);
+    const dialogo = screen.getByRole("dialog", { name: "¿Guardar sin esas fotos?" });
+    expect(guardado).toBe(false);
+    await u.click(within(dialogo).getByRole("button", { name: "Guardar sin esas fotos" }));
+    await waitFor(() => expect(guardado).toBe(true));
+  });
+});
