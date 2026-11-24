@@ -84,6 +84,9 @@ CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").sp
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
+# `sembrar` solo acepta la clave de ejemplo del admin donde esto es True (desarrollo).
+SEMILLA_CLAVE_LOCAL_PERMITIDA = False
+
 NOTIFICADOR = "apps.comun.notificaciones.NotificadorCorreo"
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL", "Garaje Ruta <no-responder@garajeruta.test>"

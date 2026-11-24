@@ -32,7 +32,9 @@ npm run dev                                                 # http://localhost:3
 npm test
 ```
 
-Usuarios de ejemplo (contraseña `Demo-Garaje-2026`): `admin@garajeruta.test`, `colaborador@garajeruta.test` y `demo@garajeruta.test` (solo lectura).
+Usuario de demostración (solo lectura): `demo@garajeruta.test` / `Demo-Garaje-2026`.
+
+En desarrollo, `sembrar` crea además `admin@garajeruta.test` y `colaborador@garajeruta.test` con la clave local `Local-Garaje-2026`. Fuera de desarrollo exige `SEMILLA_PASSWORD` (secreta) y nunca usa esa clave.
 
 ## Estado
 

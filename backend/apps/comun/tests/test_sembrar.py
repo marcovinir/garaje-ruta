@@ -1,7 +1,11 @@
+from datetime import datetime
 from io import StringIO
+from zoneinfo import ZoneInfo
 
+import pytest
+import time_machine
 from django.contrib.auth import authenticate
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.db.models import Sum
 
 from apps.actividad.models import HistorialCambio, TipoCambio, Venta, VistaDiaria
@@ -32,7 +36,7 @@ def test_sembrar_crea_datos(db):
         "colaborador@garajeruta.test",
         "demo@garajeruta.test",
     }
-    assert authenticate(email="admin@garajeruta.test", password="Demo-Garaje-2026")
+    assert authenticate(email="admin@garajeruta.test", password="Local-Garaje-2026")
     assert authenticate(email="demo@garajeruta.test", password="Demo-Garaje-2026")
     assert TipoCambio.objects.count() == 60
     assert VistaDiaria.objects.exists()
@@ -86,3 +90,57 @@ def test_sembrar_reiniciar_regenera(db):
     assert Venta.objects.count() == ventas
     assert Usuario.objects.get(email="admin@garajeruta.test").id == admin_id
     assert Usuario.objects.count() == 3
+
+
+def test_clave_del_admin_separada_de_la_del_demo(db, monkeypatch):
+    monkeypatch.setenv("SEMILLA_PASSWORD", "Secreta-Del-Admin-2026")
+    monkeypatch.setenv("SEMILLA_PASSWORD_DEMO", "Publica-Del-Demo-2026")
+    sembrar()
+    assert authenticate(email="admin@garajeruta.test", password="Secreta-Del-Admin-2026")
+    assert not authenticate(email="admin@garajeruta.test", password="Publica-Del-Demo-2026")
+    assert authenticate(email="colaborador@garajeruta.test", password="Secreta-Del-Admin-2026")
+    assert authenticate(email="demo@garajeruta.test", password="Publica-Del-Demo-2026")
+
+
+def test_sin_clave_del_admin_fuera_de_desarrollo_falla(db, monkeypatch, settings):
+    settings.SEMILLA_CLAVE_LOCAL_PERMITIDA = False
+    monkeypatch.delenv("SEMILLA_PASSWORD", raising=False)
+    with pytest.raises(CommandError, match="SEMILLA_PASSWORD"):
+        sembrar()
+    assert not Articulo.objects.exists()
+
+
+def test_equipamiento_coherente_con_el_auto(db):
+    sembrar()
+    for auto in Auto.objects.select_related("carroceria", "combustible", "transmision"):
+        nombres = set(auto.equipamiento.values_list("nombre", flat=True))
+        if auto.carroceria.slug != "pickup":
+            assert "Cobertor de cajón" not in nombres
+        if auto.carroceria.slug not in ("pickup", "suv"):
+            assert "Estribos" not in nombres
+        if auto.combustible.nombre == "Eléctrico":
+            assert "Turbo" not in nombres
+        if auto.transmision.nombre != "Automática/Dual":
+            assert "Caja de cambios dual" not in nombres
+        if auto.anio < 2016:
+            assert not nombres & {"Apple CarPlay", "Android Auto", "Cargador inalámbrico"}
+
+
+def test_anios_posibles_por_modelo(db):
+    from apps.comun.semillas import ANIO_MINIMO
+
+    sembrar()
+    for auto in Auto.objects.select_related("modelo"):
+        assert auto.anio >= ANIO_MINIMO.get(auto.modelo.nombre, 2008), auto
+
+
+def test_fechas_en_hora_de_costa_rica(db):
+    # 20:00 en Costa Rica ya es el día siguiente en UTC.
+    noche = datetime(2026, 11, 23, 20, 0, tzinfo=ZoneInfo("America/Costa_Rica"))
+    with time_machine.travel(noche, tick=False):
+        sembrar()
+    assert str(TipoCambio.vigente().fecha) == "2026-11-23"
+    assert str(VistaDiaria.objects.latest("fecha").fecha) == "2026-11-23"
+    assert not Venta.objects.filter(
+        fecha__lt=datetime(2026, 5, 27, tzinfo=ZoneInfo("UTC"))
+    ).exists()
