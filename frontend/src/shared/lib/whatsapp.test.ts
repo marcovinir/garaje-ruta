@@ -47,7 +47,7 @@ it("visita de auto: texto exacto y referencia al final", () => {
   ).toBe(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`);
 });
 it("consulta de repuesto: precio y disponibilidad", () => {
-  const mensaje = `Hola, estoy interesado en el Faro derecho Nissan X-Trail publicado en ₡85 000. Quisiera conocer su disponibilidad.\n${repuesto.url}`;
+  const mensaje = `Hola, estoy interesado en este repuesto: Faro derecho Nissan X-Trail, publicado en ₡85 000. Quisiera conocer su disponibilidad.\n${repuesto.url}`;
   expect(enlaceConsultaRepuesto(numero, repuesto)).toBe(
     `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`,
   );
@@ -74,4 +74,12 @@ it("omite el número de parte vacío y permite referencias en todos los contexto
   ]) {
     expect(new URL(enlace).searchParams.get("text")).toMatch(/\nReferencia: GR-5$/);
   }
+});
+
+it("con piezas en femenino el mensaje sigue siendo correcto (no «en el Batería»)", () => {
+  const texto = new URL(
+    enlaceConsultaRepuesto(numero, { ...repuesto, nombre: "Batería Hyundai Accent" }),
+  ).searchParams.get("text");
+  expect(texto).toContain("en este repuesto: Batería Hyundai Accent,");
+  expect(texto).not.toContain("en el Batería");
 });

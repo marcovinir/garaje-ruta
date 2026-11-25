@@ -63,7 +63,7 @@ export function enlaceVisitaAuto(numero: string, auto: AutoWhatsapp): string {
 export function enlaceConsultaRepuesto(numero: string, repuesto: RepuestoWhatsapp): string {
   return enlaceContextual(
     numero,
-    `Hola, estoy interesado en el ${repuesto.nombre} publicado en ${colones(repuesto.precio)}. Quisiera conocer su disponibilidad.`,
+    `Hola, estoy interesado en este repuesto: ${repuesto.nombre}, publicado en ${colones(repuesto.precio)}. Quisiera conocer su disponibilidad.`,
     repuesto,
   );
 }
