@@ -1,14 +1,20 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import { Encabezado } from "@/features/publico/componentes/Encabezado";
+import { Encabezado } from "@/features/publico/encabezado/Encabezado";
 import { PieDePagina } from "@/features/publico/componentes/PieDePagina";
+import { WhatsappFlotante } from "@/features/publico/componentes/WhatsappFlotante";
 import { obtenerConfiguracion } from "@/shared/api/datos";
 
 async function Pie() {
   await connection();
   const configuracion = await obtenerConfiguracion().catch(() => null);
-  return <PieDePagina configuracion={configuracion} />;
+  return (
+    <>
+      <PieDePagina configuracion={configuracion} />
+      {configuracion ? <WhatsappFlotante numero={configuracion.whatsapp} /> : null}
+    </>
+  );
 }
 
 export default function LayoutPublico({ children }: LayoutProps<"/">) {

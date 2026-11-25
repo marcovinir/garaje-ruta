@@ -10,7 +10,7 @@ export default function NoEncontrado() {
       <div className="flex flex-wrap justify-center gap-3">
         <Link
           href="/autos"
-          className="bg-rojo hover:bg-rojo-oscuro rounded-xl px-5 py-3 font-semibold text-white"
+          className="bg-rojo hover:bg-rojo-fuerte rounded-xl px-5 py-3 font-semibold text-white"
         >
           Ver autos
         </Link>

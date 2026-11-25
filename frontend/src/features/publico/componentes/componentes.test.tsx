@@ -4,10 +4,9 @@ import { describe, expect, it } from "vitest";
 import type { Tarjeta } from "@/shared/api/tipos";
 
 import { BotonWhatsapp } from "./BotonWhatsapp";
-import { Encabezado } from "./Encabezado";
 import { EtiquetaEstado } from "./EtiquetaEstado";
 import { MensajeError } from "./MensajeError";
-import { resumirHorarios } from "./PieDePagina";
+import { PieDePagina, resumirHorarios } from "./PieDePagina";
 import { Precio } from "./Precio";
 import { TarjetaArticulo } from "./TarjetaArticulo";
 
@@ -91,11 +90,10 @@ describe("otros componentes", () => {
     expect(screen.getByText("Reservado")).toBeInTheDocument();
   });
 
-  it("Encabezado tiene logo y navegación accesibles", () => {
-    render(<Encabezado />);
-    expect(screen.getByRole("link", { name: "Garaje Ruta, inicio" })).toHaveAttribute("href", "/");
-    expect(screen.getAllByRole("navigation", { name: "Principal" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Menú")).toBeInTheDocument();
+  it("el pie (#contacto) deja lugar para el encabezado fijo al llegar desde «Contacto»", () => {
+    const { container } = render(<PieDePagina configuracion={null} />);
+    const pie = container.querySelector("footer#contacto");
+    expect(pie?.className).toMatch(/scroll-mt-\d+/);
   });
 
   it("resumirHorarios agrupa días seguidos con la misma franja", () => {
