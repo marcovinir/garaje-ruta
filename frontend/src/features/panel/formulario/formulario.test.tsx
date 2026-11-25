@@ -330,3 +330,57 @@ describe("fotos en el formulario", () => {
     await waitFor(() => expect(guardado).toBe(true));
   });
 });
+
+it("agrupa datos opcionales y muestra batería solo para eléctrico o híbrido enchufable", async () => {
+  const u = userEvent.setup();
+  irA("/panel/articulos/nuevo", "tipo=auto");
+  renderPanel(<PaginaNuevo />);
+  const resumen = await screen.findByText("Más datos");
+  expect(resumen.closest("details")).not.toHaveAttribute("open");
+  await u.click(resumen);
+  expect(screen.getByLabelText("Historial de accidentes")).toHaveValue("");
+  expect(screen.getByLabelText("Traspaso incluido")).toHaveValue("");
+  expect(screen.queryByLabelText("Salud de la batería (%)")).not.toBeInTheDocument();
+  const combustible = screen.getByLabelText("Combustible");
+  for (const nombre of ["Eléctrico", "Híbrido enchufable"]) {
+    await u.selectOptions(combustible, within(combustible).getByRole("option", { name: nombre }));
+    expect(screen.getByLabelText("Salud de la batería (%)")).toBeVisible();
+  }
+  await u.selectOptions(combustible, "1");
+  expect(screen.queryByLabelText("Salud de la batería (%)")).not.toBeInTheDocument();
+});
+
+it("guarda fabricante, clasificación y motor desde Más datos", async () => {
+  const u = userEvent.setup();
+  let cuerpo: unknown;
+  servidor.use(
+    http.post("*/api/v1/panel/articulos/", async ({ request }) => {
+      cuerpo = await request.json();
+      return HttpResponse.json({ ...DETALLE, tipo: "repuesto", id: 501 }, { status: 201 });
+    }),
+  );
+  irA("/panel/articulos/nuevo", "tipo=repuesto");
+  renderPanel(<PaginaNuevo />);
+  await u.type(await screen.findByLabelText("Título"), "Faro");
+  await u.type(screen.getByLabelText("Precio (₡)"), "85000");
+  const categoria = screen.getByLabelText("Categoría");
+  await u.selectOptions(categoria, within(categoria).getAllByRole("option")[1]);
+  await u.selectOptions(screen.getByLabelText("Marca"), "13");
+  await u.selectOptions(screen.getByLabelText("Modelo"), "40");
+  await u.type(screen.getByLabelText("Desde el año"), "2015");
+  await u.type(screen.getByLabelText("Hasta el año"), "2018");
+  await u.click(screen.getByText("Más datos"));
+  await u.type(screen.getByLabelText("Fabricante"), "Fabricante A");
+  await u.selectOptions(screen.getByLabelText("Clasificación"), "oem");
+  await u.type(screen.getByLabelText("Motor o versión (compatibilidad 1)"), "1.8 L");
+  await guardar(u);
+  await waitFor(() =>
+    expect(cuerpo).toMatchObject({
+      repuesto: {
+        fabricante: "Fabricante A",
+        clasificacion: "oem",
+        compatibilidades: [{ motor_version: "1.8 L" }],
+      },
+    }),
+  );
+});

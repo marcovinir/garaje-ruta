@@ -28,9 +28,15 @@ export function CampoTexto({
   ayuda,
   className,
   numerico = false,
+  decimal = false,
   tipo = "text",
   placeholder,
-}: Comunes & { numerico?: boolean; tipo?: "text" | "date"; placeholder?: string }) {
+}: Comunes & {
+  numerico?: boolean;
+  decimal?: boolean;
+  tipo?: "text" | "date";
+  placeholder?: string;
+}) {
   const { register, error, id } = useCampo(nombre);
   return (
     <Campo id={id} etiqueta={etiqueta} error={error} ayuda={ayuda} className={className}>
@@ -38,7 +44,7 @@ export function CampoTexto({
         {...register(nombre)}
         {...propsCampo(id, error, ayuda)}
         type={tipo}
-        inputMode={numerico ? "numeric" : undefined}
+        inputMode={decimal ? "decimal" : numerico ? "numeric" : undefined}
         placeholder={placeholder}
         className={CAMPO}
       />

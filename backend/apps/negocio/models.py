@@ -10,6 +10,12 @@ class ConfiguracionNegocio(models.Model):
     whatsapp = models.CharField(max_length=20)  # con código de país, solo dígitos: 506…
     direccion = models.CharField(max_length=200)
     mapa_url = models.URLField(max_length=500, blank=True)
+    # NULL representa «sin dato» para las condiciones comerciales.
+    garantia_repuestos = models.TextField(max_length=1000, null=True, blank=True)  # noqa: DJ001
+    condiciones_devolucion = models.TextField(max_length=1000, null=True, blank=True)  # noqa: DJ001
+    metodos_entrega = models.TextField(max_length=1000, null=True, blank=True)  # noqa: DJ001
+    metodos_pago = models.TextField(max_length=1000, null=True, blank=True)  # noqa: DJ001
+    condiciones_compra = models.TextField(max_length=1000, null=True, blank=True)  # noqa: DJ001
 
     class Meta:
         db_table = "configuracion_negocio"

@@ -56,19 +56,19 @@ export function FormularioArticulo({ tipo, catalogos, detalle }: Props) {
     detalle ? desdeDetalle(detalle, catalogos) : valoresIniciales(tipo),
   );
   const metodos = useForm<ValoresFormulario>({
-    resolver: zodResolver(esquemaArticulo(tipo)),
+    resolver: zodResolver(esquemaArticulo(tipo, catalogos)),
     defaultValues: inicial,
   });
   const { handleSubmit, setError, getValues, formState } = metodos;
 
   const guardar = useMutation({
     mutationFn: async (valores: ValoresFormulario): Promise<Resultado> => {
-      const escritura = aEscritura(valores);
+      const escritura = aEscritura(valores, catalogos);
       let articulo: DetallePanel;
       if (!detalle) {
         articulo = await articulosApi.crear(escritura);
       } else {
-        const cuerpo = cambios(aEscritura(inicial), escritura);
+        const cuerpo = cambios(aEscritura(inicial, catalogos), escritura);
         articulo = Object.keys(cuerpo).length
           ? await articulosApi.editar(detalle.id, cuerpo)
           : detalle;

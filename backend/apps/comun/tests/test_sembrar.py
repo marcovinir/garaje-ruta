@@ -236,6 +236,10 @@ def test_sembrar_titulos_compatibilidades_e_informe(db):
     salida = StringIO()
     call_command("revisar_datos", stdout=salida)
     assert salida.getvalue() == "Inconsistencias: 0. Artículos revisados: 120.\n"
+    assert not Auto.objects.filter(historial_accidentes__isnull=False).exists()
+    assert not Auto.objects.filter(bateria_salud_pct__isnull=False).exists()
+    assert not Repuesto.objects.filter(fabricante__isnull=False).exists()
+    assert not Compatibilidad.objects.filter(motor_version__isnull=False).exists()
 
 
 def test_migracion_transmision_conserva_id_y_referencias(db):

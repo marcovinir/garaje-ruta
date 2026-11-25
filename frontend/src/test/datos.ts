@@ -71,6 +71,9 @@ export const CATALOGOS: Catalogos = {
   combustibles: [
     { id: 1, nombre: "Gasolina" },
     { id: 2, nombre: "Diésel" },
+    { id: 3, nombre: "Eléctrico" },
+    { id: 4, nombre: "Híbrido enchufable" },
+    { id: 5, nombre: "Híbrido" },
   ],
   tracciones: [{ id: 1, nombre: "4x2" }],
   carrocerias: [{ id: 1, nombre: "Sedán", slug: "sedan" }],

@@ -13,6 +13,7 @@ import { mensajeDe } from "../auth/api";
 import { useSesion } from "../auth/useSesion";
 import { Campo, propsCampo } from "../ui/Campo";
 import { useAvisos } from "../ui/contextoAvisos";
+import { MasDatos } from "../ui/MasDatos";
 import { EncabezadoPagina } from "../ui/EncabezadoPagina";
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO, BOTON_TENUE, CAMPO, TARJETA } from "../ui/estilos";
 
@@ -21,7 +22,22 @@ const CLAVE = ["panel", "configuracion"] as const;
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+const textoComercial = z.string().trim().max(1000, "Máximo 1000 caracteres.");
+const CONDICIONES = {
+  garantia_repuestos: "Garantía general de repuestos",
+  condiciones_devolucion: "Condiciones de devolución",
+  metodos_entrega: "Métodos de entrega",
+  metodos_pago: "Métodos de pago",
+  condiciones_compra: "Condiciones de compra",
+} as const;
+const camposComerciales = Object.keys(CONDICIONES) as (keyof typeof CONDICIONES)[];
+
 const esquema = z.object({
+  garantia_repuestos: textoComercial,
+  condiciones_devolucion: textoComercial,
+  metodos_entrega: textoComercial,
+  metodos_pago: textoComercial,
+  condiciones_compra: textoComercial,
   nombre: z.string().trim().min(1, "Completá este campo.").max(80),
   whatsapp: z
     .string()
@@ -53,6 +69,11 @@ function aValores(c: Configuracion): Valores {
     whatsapp: c.whatsapp,
     direccion: c.direccion,
     mapa_url: c.mapa_url,
+    garantia_repuestos: c.garantia_repuestos ?? "",
+    condiciones_devolucion: c.condiciones_devolucion ?? "",
+    metodos_entrega: c.metodos_entrega ?? "",
+    metodos_pago: c.metodos_pago ?? "",
+    condiciones_compra: c.condiciones_compra ?? "",
     horarios: c.horarios.map((h) => ({ ...h, dia_semana: String(h.dia_semana) })),
   };
 }
@@ -79,6 +100,7 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
         metodo: "PUT",
         cuerpo: {
           ...v,
+          ...Object.fromEntries(camposComerciales.map((campo) => [campo, v[campo] || null])),
           logo_public_id: actual.logo_public_id,
           horarios: v.horarios.map((h) => ({ ...h, dia_semana: Number(h.dia_semana) })),
         },
@@ -228,6 +250,22 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
             Para un horario partido, agregá dos tramos el mismo día.
           </p>
         </section>
+        <MasDatos conErrores={camposComerciales.some((campo) => Boolean(errors[campo]))}>
+          {camposComerciales.map((campo) => {
+            const id = `config-${campo}`;
+            const error = errors[campo]?.message;
+            return (
+              <Campo key={campo} id={id} etiqueta={CONDICIONES[campo]} error={error}>
+                <textarea
+                  {...register(campo)}
+                  {...propsCampo(id, error)}
+                  rows={3}
+                  className={`${CAMPO} py-2`}
+                />
+              </Campo>
+            );
+          })}
+        </MasDatos>
       </fieldset>
     </form>
   );

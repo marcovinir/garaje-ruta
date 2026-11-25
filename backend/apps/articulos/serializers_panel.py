@@ -1,5 +1,7 @@
 """Forma de los datos de artículos en el panel: escritura con ids de catálogo y lectura."""
 
+from decimal import Decimal
+
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -12,9 +14,11 @@ from apps.catalogos.models import (
     Traccion,
     Transmision,
 )
+from apps.comun.serializers import TextoOpcional
 
 from .models import (
     Articulo,
+    ClasificacionRepuesto,
     CondicionRepuesto,
     EstadoGeneral,
     Procedencia,
@@ -74,6 +78,30 @@ class AutoEscrituraSerializer(serializers.Serializer):
     placa_termina_en = serializers.IntegerField(
         min_value=0, max_value=9, required=False, allow_null=True
     )
+    marchamo_anio = serializers.IntegerField(
+        min_value=1950, max_value=CHICO_MAX, required=False, allow_null=True
+    )
+    traspaso_incluido = serializers.BooleanField(required=False, allow_null=True)
+    financiamiento = serializers.BooleanField(required=False, allow_null=True)
+    sin_gravamenes = serializers.BooleanField(required=False, allow_null=True)
+    historial_mantenimiento = TextoOpcional(max_length=250)
+    historial_accidentes = TextoOpcional(max_length=250)
+    garantia = TextoOpcional(max_length=250)
+    bateria_kwh = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal(0),
+        max_value=Decimal(ENTERO_MAX),
+        required=False,
+        allow_null=True,
+    )
+    bateria_salud_pct = serializers.IntegerField(
+        min_value=0, max_value=100, required=False, allow_null=True
+    )
+    autonomia_km = serializers.IntegerField(
+        min_value=0, max_value=ENTERO_MAX, required=False, allow_null=True
+    )
+    tipo_carga = TextoOpcional(max_length=80)
     equipamiento = serializers.PrimaryKeyRelatedField(
         queryset=Equipamiento.objects.all(), many=True, required=False, default=list
     )
@@ -81,11 +109,15 @@ class AutoEscrituraSerializer(serializers.Serializer):
     def validate_anio(self, anio: int) -> int:
         return _anio_hasta_el_proximo(anio)
 
+    def validate_marchamo_anio(self, anio: int | None) -> int | None:
+        return _anio_hasta_el_proximo(anio) if anio is not None else None
+
 
 class CompatibilidadEscrituraSerializer(serializers.Serializer):
     modelo = _pk(Modelo)
     anio_desde = serializers.IntegerField(min_value=1950)
     anio_hasta = serializers.IntegerField(min_value=1950)
+    motor_version = TextoOpcional(max_length=80)
 
     def validate_anio_desde(self, anio: int) -> int:
         return _anio_hasta_el_proximo(anio)
@@ -110,6 +142,10 @@ class RepuestoEscrituraSerializer(serializers.Serializer):
     )
     numero_parte = serializers.CharField(
         max_length=60, required=False, allow_blank=True, default=""
+    )
+    fabricante = TextoOpcional(max_length=80)
+    clasificacion = serializers.ChoiceField(
+        choices=ClasificacionRepuesto.choices, required=False, allow_null=True
     )
     compatibilidades = CompatibilidadEscrituraSerializer(
         many=True,
@@ -226,6 +262,7 @@ class DetallePanelSerializer(serializers.ModelSerializer):
                 "modelo": c.modelo_id,
                 "anio_desde": c.anio_desde,
                 "anio_hasta": c.anio_hasta,
+                "motor_version": c.motor_version,
             }
             for c in repuesto.compatibilidades.all()
         ]
