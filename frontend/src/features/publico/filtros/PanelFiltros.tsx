@@ -303,7 +303,7 @@ export function PanelFiltros({ tipo, id, filtros, catalogos }: Props) {
       <div className="bg-tarjeta sticky bottom-0 flex gap-3 py-2">
         <button
           type="submit"
-          className="bg-rojo hover:bg-rojo-oscuro min-h-11 flex-1 rounded-xl px-4 font-semibold text-white"
+          className="bg-rojo hover:bg-rojo-fuerte min-h-11 flex-1 rounded-xl px-4 font-semibold text-white"
         >
           Aplicar filtros
         </button>

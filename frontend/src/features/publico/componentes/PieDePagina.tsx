@@ -45,7 +45,7 @@ export function PieDePagina({ configuracion }: { configuracion: Configuracion | 
               href={enlaceWhatsappGeneral(configuracion.whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-rojo hover:bg-rojo-oscuro inline-flex min-h-11 items-center self-start rounded-xl px-4 font-semibold text-white"
+              className="bg-rojo hover:bg-rojo-fuerte inline-flex min-h-11 items-center self-start rounded-xl px-4 font-semibold text-white"
             >
               Escribinos por WhatsApp
             </a>

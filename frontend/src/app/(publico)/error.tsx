@@ -10,7 +10,7 @@ export default function ErrorGeneral({ reset }: { error: Error; reset: () => voi
       <button
         type="button"
         onClick={reset}
-        className="bg-rojo hover:bg-rojo-oscuro min-h-11 rounded-xl px-5 font-semibold text-white"
+        className="bg-rojo hover:bg-rojo-fuerte min-h-11 rounded-xl px-5 font-semibold text-white"
       >
         Reintentar
       </button>

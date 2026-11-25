@@ -74,7 +74,7 @@ export async function ResultadosBusqueda({ searchParams }: { searchParams: Promi
       />
       <button
         type="submit"
-        className="bg-rojo hover:bg-rojo-oscuro min-h-11 rounded-xl px-5 font-semibold text-white"
+        className="bg-rojo hover:bg-rojo-fuerte min-h-11 rounded-xl px-5 font-semibold text-white"
       >
         Buscar
       </button>

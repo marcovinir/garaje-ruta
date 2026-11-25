@@ -38,7 +38,7 @@ export function BotonWhatsapp({
       href={enlaceWhatsapp(numero, titulo, url)}
       target="_blank"
       rel="noopener noreferrer"
-      className={`bg-rojo hover:bg-rojo-oscuro flex min-h-13 items-center justify-center gap-2.5 rounded-xl px-5 font-bold text-white ${className}`}
+      className={`bg-rojo hover:bg-rojo-fuerte flex min-h-13 items-center justify-center gap-2.5 rounded-xl px-5 font-bold text-white ${className}`}
     >
       <IconoWhatsapp />
       {texto}
