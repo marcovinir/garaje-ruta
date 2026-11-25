@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import { Encabezado } from "@/features/publico/componentes/Encabezado";
+import { Encabezado } from "@/features/publico/encabezado/Encabezado";
 import { PieDePagina } from "@/features/publico/componentes/PieDePagina";
 import { WhatsappFlotante } from "@/features/publico/componentes/WhatsappFlotante";
 import { obtenerConfiguracion } from "@/shared/api/datos";

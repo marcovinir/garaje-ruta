@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import type { Tarjeta } from "@/shared/api/tipos";
 
 import { BotonWhatsapp } from "./BotonWhatsapp";
-import { Encabezado } from "./Encabezado";
 import { EtiquetaEstado } from "./EtiquetaEstado";
 import { MensajeError } from "./MensajeError";
 import { resumirHorarios } from "./PieDePagina";
@@ -89,13 +88,6 @@ describe("otros componentes", () => {
   it("EtiquetaEstado traduce el estado", () => {
     render(<EtiquetaEstado estado="reservado" />);
     expect(screen.getByText("Reservado")).toBeInTheDocument();
-  });
-
-  it("Encabezado tiene logo y navegación accesibles", () => {
-    render(<Encabezado />);
-    expect(screen.getByRole("link", { name: "Garaje Ruta, inicio" })).toHaveAttribute("href", "/");
-    expect(screen.getAllByRole("navigation", { name: "Principal" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Menú")).toBeInTheDocument();
   });
 
   it("resumirHorarios agrupa días seguidos con la misma franja", () => {
