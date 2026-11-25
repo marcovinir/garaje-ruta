@@ -89,7 +89,7 @@ function TarjetaUsuario({
             Reenviar invitación
           </button>
         ) : null}
-        {!u.is_active ? (
+        {estado === "Desactivado" ? (
           <button
             type="button"
             className={BOTON_SECUNDARIO}
@@ -98,7 +98,7 @@ function TarjetaUsuario({
           >
             Reactivar
           </button>
-        ) : !esYo ? (
+        ) : estado === "Activo" && !esYo ? (
           <button type="button" className={BOTON_SECUNDARIO} onClick={alDesactivar}>
             Desactivar
           </button>

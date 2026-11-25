@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
 
 import { ApiError } from "@/shared/api/navegador";
-import type { CategoriaApi } from "@/shared/api/tipos";
+import type { Catalogos, CategoriaApi } from "@/shared/api/tipos";
 
 import { mensajeDe } from "../auth/api";
 import { useSesion } from "../auth/useSesion";
@@ -18,6 +18,35 @@ const NOMBRES: Record<TipoCatalogo, string> = {
   modelo: "modelo",
   categoria: "categoría",
 };
+
+function conNuevo(
+  c: Catalogos,
+  tipo: TipoCatalogo,
+  nuevo: { id: number; nombre: string },
+  marca?: string,
+  padre?: string,
+): Catalogos {
+  const slug = "";
+  if (tipo === "marca") {
+    return { ...c, marcas: [...c.marcas, { ...nuevo, slug, modelos: [] }] };
+  }
+  if (tipo === "modelo") {
+    return {
+      ...c,
+      marcas: c.marcas.map((m) =>
+        String(m.id) === marca ? { ...m, modelos: [...m.modelos, { ...nuevo, slug }] } : m,
+      ),
+    };
+  }
+  const hoja: CategoriaApi = { ...nuevo, slug, hijas: [] };
+  const insertar = (lista: CategoriaApi[]): CategoriaApi[] =>
+    lista.map((cat) =>
+      String(cat.id) === padre
+        ? { ...cat, hijas: [...cat.hijas, hoja] }
+        : { ...cat, hijas: insertar(cat.hijas) },
+    );
+  return { ...c, categorias: padre ? insertar(c.categorias) : [...c.categorias, hoja] };
+}
 
 function aplanar(categorias: CategoriaApi[], nivel = 0): { id: number; texto: string }[] {
   return categorias.flatMap((c) => [
@@ -54,8 +83,12 @@ export function BotonAgregarCatalogo({
         ...(tipo === "modelo" ? { marca: Number(marca) } : {}),
         ...(tipo === "categoria" ? { padre: padre ? Number(padre) : null } : {}),
       }),
-    onSuccess: async (nuevo) => {
-      await qc.invalidateQueries({ queryKey: CLAVE_CATALOGOS });
+    onSuccess: (nuevo) => {
+      // Se agrega a la caché en vez de volver a pedir /catalogos/: Django solo devuelve ahí las
+      // marcas que ya tienen modelos, y una marca recién creada todavía no tiene.
+      qc.setQueryData<Catalogos>(CLAVE_CATALOGOS, (c) =>
+        c ? conNuevo(c, tipo, nuevo, marca, padre) : c,
+      );
       // El select es no controlado: se elige cuando su opción nueva ya se dibujó.
       setTimeout(() => alCrear(String(nuevo.id)), 0);
       setAbierto(false);

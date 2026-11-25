@@ -48,6 +48,8 @@ export const NOMBRE_ROL: Record<Rol, string> = {
 };
 
 export function estadoUsuario(u: UsuarioPanel): "Activo" | "Pendiente de activar" | "Desactivado" {
-  if (!u.is_active) return "Desactivado";
-  return u.activado ? "Activo" : "Pendiente de activar";
+  // Un invitado nace con is_active=False (Django lo activa al crear su contraseña): primero
+  // importa si ya activó la cuenta.
+  if (!u.activado) return "Pendiente de activar";
+  return u.is_active ? "Activo" : "Desactivado";
 }

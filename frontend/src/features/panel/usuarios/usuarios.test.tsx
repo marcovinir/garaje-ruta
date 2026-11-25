@@ -34,7 +34,8 @@ const usuario = (u: Partial<UsuarioPanel> & Pick<UsuarioPanel, "id" | "nombre">)
 const USUARIOS = [
   usuario({ id: 1, nombre: "Ana", rol: "admin" }),
   usuario({ id: 2, nombre: "Carlos" }),
-  usuario({ id: 4, nombre: "Lucía", activado: false }),
+  // Como en Django: un invitado nace con is_active=False hasta activar su cuenta.
+  usuario({ id: 4, nombre: "Lucía", activado: false, is_active: false }),
   usuario({ id: 5, nombre: "Pedro", is_active: false }),
 ];
 
@@ -60,7 +61,13 @@ describe("usuarios", () => {
     const u = userEvent.setup();
     let cuerpo: unknown;
     let creado = false;
-    const nueva = usuario({ id: 9, nombre: "Sofía", activado: false, email: "sofia@x.test" });
+    const nueva = usuario({
+      id: 9,
+      nombre: "Sofía",
+      activado: false,
+      is_active: false,
+      email: "sofia@x.test",
+    });
     servidor.use(
       http.get("*/api/v1/panel/usuarios/", () => {
         const lista = creado ? [...USUARIOS, nueva] : USUARIOS;
@@ -168,6 +175,9 @@ describe("usuarios", () => {
     expect(
       within(await fila("Lucía")).getByRole("button", { name: "Reenviar invitación" }),
     ).toBeInTheDocument();
+    expect(
+      within(await fila("Lucía")).queryByRole("button", { name: "Reactivar" }),
+    ).not.toBeInTheDocument();
     expect(
       within(await fila("Carlos")).queryByRole("button", { name: "Reenviar invitación" }),
     ).not.toBeInTheDocument();
