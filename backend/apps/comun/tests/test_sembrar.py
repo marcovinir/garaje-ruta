@@ -18,6 +18,7 @@ from apps.articulos.models import (
     Repuesto,
     TipoArticulo,
 )
+from apps.comun import semillas
 from apps.cuentas.models import Usuario
 
 
@@ -151,3 +152,23 @@ def test_tipo_cambio_de_ejemplo_realista(db):
     for tc in TipoCambio.objects.all():
         assert 440 <= tc.venta <= 460
         assert tc.compra == tc.venta - 6
+
+
+def test_sembrar_fotos_coinciden_con_el_articulo(db):
+    """Cada auto muestra su modelo (y su color) y cada repuesto, su pieza."""
+    sembrar()
+    assert set(semillas.FOTO_PIEZA) == {p[0] for p in semillas.PIEZAS}
+    for auto in Auto.objects.select_related("articulo", "modelo", "carroceria", "combustible"):
+        exteriores, color = semillas.FOTOS_MODELO[auto.modelo.nombre]
+        fotos = list(auto.articulo.fotos.order_by("orden").values_list("public_id", flat=True))
+        assert fotos[0] in exteriores
+        assert auto.color_exterior == color
+        assert fotos == semillas.fotos_auto(
+            auto.modelo.nombre, auto.carroceria.slug, auto.combustible.nombre, auto.anio
+        )
+        if auto.combustible.nombre == "Eléctrico":
+            assert semillas.FOTO_MOTOR not in fotos
+    for repuesto in Repuesto.objects.select_related("articulo"):
+        pieza = next(p for p in semillas.FOTO_PIEZA if repuesto.articulo.titulo.startswith(p))
+        fotos = list(repuesto.articulo.fotos.values_list("public_id", flat=True))
+        assert fotos == [semillas.FOTO_PIEZA[pieza]]
