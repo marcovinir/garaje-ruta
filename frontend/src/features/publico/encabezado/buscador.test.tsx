@@ -150,6 +150,62 @@ describe("buscador con sugerencias (#115)", () => {
     expect(router.push).toHaveBeenCalledWith("/buscar?q=corola%20altx");
   });
 
+  it("Esc antes de los 300 ms cancela la búsqueda: la lista no se abre sola después", async () => {
+    const pedidos: Pedido[] = [];
+    api(pedidos);
+    render(<Buscador id="b" />);
+    const u = usuario();
+    await u.type(campo(), "toyota");
+    await u.keyboard("{Escape}");
+    await act(() => vi.advanceTimersByTimeAsync(1500));
+    expect(pedidos).toHaveLength(0);
+    expect(campo()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("al salir del campo antes de que lleguen las sugerencias, no se abren", async () => {
+    api([]);
+    render(
+      <>
+        <Buscador id="b" />
+        <button type="button">Otra cosa</button>
+      </>,
+    );
+    const u = usuario();
+    await u.type(campo(), "toyota");
+    await u.click(screen.getByRole("button", { name: "Otra cosa" }));
+    await act(() => vi.advanceTimersByTimeAsync(1500));
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("las opciones no se recrean al moverse con las flechas (lectores de pantalla)", async () => {
+    api([]);
+    render(<Buscador id="b" />);
+    const u = usuario();
+    await u.type(campo(), "toyota");
+    await act(() => vi.advanceTimersByTimeAsync(350));
+    await screen.findByRole("listbox");
+    const primera = screen.getAllByRole("option")[0];
+    await u.keyboard("{ArrowDown}");
+    expect(screen.getAllByRole("option")[0]).toBe(primera);
+  });
+
+  it("Esc con la lista abierta no sigue hacia afuera (no cierra el menú del celular)", async () => {
+    api([]);
+    const afuera = vi.fn();
+    render(
+      <div onKeyDown={(e) => afuera(e.defaultPrevented)}>
+        <Buscador id="b" />
+      </div>,
+    );
+    const u = usuario();
+    await u.type(campo(), "toyota");
+    await act(() => vi.advanceTimersByTimeAsync(350));
+    await screen.findByRole("listbox");
+    afuera.mockClear();
+    await u.keyboard("{Escape}");
+    expect(afuera).not.toHaveBeenCalledWith(false);
+  });
+
   it("una respuesta vieja que llega tarde no pisa la nueva", async () => {
     api([]);
     render(<Buscador id="b" />);

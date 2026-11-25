@@ -28,7 +28,7 @@ export function resumirHorarios(horarios: Configuracion["horarios"]): string[] {
 
 export function PieDePagina({ configuracion }: { configuracion: Configuracion | null }) {
   return (
-    <footer id="contacto" className="bg-tarjeta border-borde mt-auto border-t">
+    <footer id="contacto" className="bg-tarjeta border-borde mt-auto scroll-mt-36 border-t">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
         <div className="flex flex-col gap-3">
           <Image

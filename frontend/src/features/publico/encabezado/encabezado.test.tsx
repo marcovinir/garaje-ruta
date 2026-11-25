@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -63,6 +63,43 @@ describe("encabezado público (#115)", () => {
     for (const nombre of ["Autos", "Repuestos", "Ofertas"]) {
       expect(within(accesos).getByRole("link", { name: nombre })).toBeInTheDocument();
     }
+  });
+
+  it("el menú se cierra al tocar cualquier enlace del encabezado (accesos, logo)", async () => {
+    const usuario = userEvent.setup();
+    irA("/");
+    render(<Encabezado />);
+    const abrir = () => usuario.click(screen.getByRole("button", { name: "Abrir el menú" }));
+    await abrir();
+    const accesos = screen.getByRole("navigation", { name: "Accesos rápidos" });
+    fireEvent.click(within(accesos).getByRole("link", { name: "Repuestos" }));
+    expect(screen.queryByRole("navigation", { name: "Menú" })).not.toBeInTheDocument();
+    await abrir();
+    fireEvent.click(screen.getAllByRole("link", { name: "Garaje Ruta, inicio" })[1]);
+    expect(screen.queryByRole("navigation", { name: "Menú" })).not.toBeInTheDocument();
+  });
+
+  it("el menú se cierra con Atrás del navegador", async () => {
+    irA("/");
+    render(<Encabezado />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Abrir el menú" }));
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(screen.queryByRole("navigation", { name: "Menú" })).not.toBeInTheDocument();
+  });
+
+  it("al cerrar el menú con Esc el foco vuelve al botón del menú", async () => {
+    const usuario = userEvent.setup();
+    irA("/");
+    render(<Encabezado />);
+    const boton = screen.getByRole("button", { name: "Abrir el menú" });
+    await usuario.click(boton);
+    within(screen.getByRole("navigation", { name: "Menú" }))
+      .getByRole("link", { name: "Inicio" })
+      .focus();
+    await usuario.keyboard("{Escape}");
+    expect(screen.getByRole("button", { name: "Abrir el menú" })).toHaveFocus();
   });
 
   it("el menú del celular trae Inicio y Contacto, y se cierra con Esc y al elegir una página", async () => {

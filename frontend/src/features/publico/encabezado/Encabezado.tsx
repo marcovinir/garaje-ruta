@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { Buscador } from "./Buscador";
 import { Icono, TRAZOS } from "./iconos";
@@ -44,19 +44,34 @@ export function Encabezado() {
   // se cierra al tocar uno de sus enlaces o con Esc.
   const [abierto, setAbierto] = useState(false);
   const cerrar = () => setAbierto(false);
+  const botonMenu = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!abierto) return;
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setAbierto(false);
+      // Si el buscador ya usó el Esc para cerrar sus sugerencias, el menú queda.
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const focoAdentro = document.getElementById("menu-publico")?.contains(document.activeElement);
+      setAbierto(false);
+      if (focoAdentro) botonMenu.current?.focus();
     };
+    // Atrás o Adelante del navegador también cierran el menú.
+    const alVolver = () => setAbierto(false);
     document.addEventListener("keydown", alTeclear);
-    return () => document.removeEventListener("keydown", alTeclear);
+    window.addEventListener("popstate", alVolver);
+    return () => {
+      document.removeEventListener("keydown", alTeclear);
+      window.removeEventListener("popstate", alVolver);
+    };
   }, [abierto]);
 
   return (
     <header
       data-compacto={compacto}
+      // Cualquier enlace del encabezado (menú, accesos, logo) navega: el menú se cierra.
+      onClickCapture={(e) => {
+        if ((e.target as Element).closest("a")) setAbierto(false);
+      }}
       className="bg-tarjeta border-rojo group sticky top-0 z-30 border-b-2 shadow-sm"
     >
       {/* Escritorio */}
@@ -76,6 +91,7 @@ export function Encabezado() {
       <div className="flex flex-col gap-2 px-4 py-2 lg:hidden">
         <div className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
           <button
+            ref={botonMenu}
             type="button"
             onClick={() => setAbierto(!abierto)}
             aria-expanded={abierto}
@@ -94,7 +110,7 @@ export function Encabezado() {
             <Nav variante="menu" alNavegar={cerrar} />
           </div>
         ) : null}
-        <Buscador id="buscar-celular" />
+        <Buscador id="buscar-celular" alElegir={cerrar} />
         <div className="group-data-[compacto=true]:hidden">
           <Nav variante="accesos" />
         </div>

@@ -34,7 +34,7 @@ const aOpcion = (t: Tarjeta): Opcion => ({
  * tecla y con 2 letras o más, hasta 4 autos y 4 repuestos. Patrón combobox de ARIA (flechas,
  * Enter, Esc). Sin JavaScript, el formulario envía a /buscar como siempre.
  */
-export function Buscador({ id }: { id: string }) {
+export function Buscador({ id, alElegir }: { id: string; alElegir?: () => void }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [estado, setEstado] = useState<Estado>("inactivo");
@@ -44,6 +44,7 @@ export function Buscador({ id }: { id: string }) {
   const [activo, setActivo] = useState(-1);
   const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const control = useRef<AbortController | null>(null);
+  const campo = useRef<HTMLInputElement>(null);
 
   useEffect(
     () => () => {
@@ -72,7 +73,8 @@ export function Buscador({ id }: { id: string }) {
     const c = new AbortController();
     control.current = c;
     setEstado("cargando");
-    setAbierto(true);
+    // Solo si el campo sigue con el foco: si la persona ya se fue, no se abre nada encima.
+    if (document.activeElement === campo.current) setAbierto(true);
     Promise.all([
       sugerencias(consulta, "auto", c.signal),
       sugerencias(consulta, "repuesto", c.signal),
@@ -101,18 +103,24 @@ export function Buscador({ id }: { id: string }) {
     temporizador.current = setTimeout(() => buscar(valor.trim()), ESPERA_MS);
   }
 
-  function ir(ruta: string) {
+  function cancelar() {
     clearTimeout(temporizador.current);
     control.current?.abort();
     setAbierto(false);
     setActivo(-1);
+  }
+
+  function ir(ruta: string) {
+    cancelar();
+    alElegir?.();
     router.push(ruta);
   }
 
   function alTeclear(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
-      setAbierto(false);
-      setActivo(-1);
+      // Con la lista abierta, el Esc es del buscador: no sigue (no cierra el menú del celular).
+      if (abierto) e.preventDefault();
+      cancelar();
       return;
     }
     if (!abierto) return;
@@ -130,7 +138,7 @@ export function Buscador({ id }: { id: string }) {
   }
 
   function alSalir(e: FocusEvent<HTMLFormElement>) {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAbierto(false);
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) cancelar();
   }
 
   const grupo = (nombre: string, lista: Opcion[], desde: number) =>
@@ -139,15 +147,15 @@ export function Buscador({ id }: { id: string }) {
         <p aria-hidden="true" className="text-tinta-suave px-3 py-1 text-xs font-bold uppercase">
           {nombre}
         </p>
-        {lista.map((o, i) => (
-          <Fila key={o.clave} opcion={o} indice={desde + i} />
-        ))}
+        {lista.map((o, i) => fila(o, desde + i))}
       </div>
     ) : null;
 
-  function Fila({ opcion, indice }: { opcion: Opcion; indice: number }) {
+  // Función y no componente: así React conserva los nodos entre teclas (aria-activedescendant).
+  function fila(opcion: Opcion, indice: number) {
     return (
       <div
+        key={opcion.clave}
         role="option"
         id={idOpcion(indice)}
         aria-selected={indice === activo}
@@ -181,6 +189,7 @@ export function Buscador({ id }: { id: string }) {
           Buscar marca, modelo o pieza
         </label>
         <input
+          ref={campo}
           id={id}
           name="q"
           type="search"
@@ -222,7 +231,7 @@ export function Buscador({ id }: { id: string }) {
             {grupo("Autos", autos, 0)}
             {grupo("Repuestos", repuestos, autos.length)}
             <div className="border-borde mt-1 border-t pt-1">
-              <Fila opcion={opciones[opciones.length - 1]} indice={opciones.length - 1} />
+              {fila(opciones[opciones.length - 1], opciones.length - 1)}
             </div>
           </div>
         </div>

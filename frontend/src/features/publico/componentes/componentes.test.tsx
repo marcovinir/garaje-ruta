@@ -6,7 +6,7 @@ import type { Tarjeta } from "@/shared/api/tipos";
 import { BotonWhatsapp } from "./BotonWhatsapp";
 import { EtiquetaEstado } from "./EtiquetaEstado";
 import { MensajeError } from "./MensajeError";
-import { resumirHorarios } from "./PieDePagina";
+import { PieDePagina, resumirHorarios } from "./PieDePagina";
 import { Precio } from "./Precio";
 import { TarjetaArticulo } from "./TarjetaArticulo";
 
@@ -88,6 +88,12 @@ describe("otros componentes", () => {
   it("EtiquetaEstado traduce el estado", () => {
     render(<EtiquetaEstado estado="reservado" />);
     expect(screen.getByText("Reservado")).toBeInTheDocument();
+  });
+
+  it("el pie (#contacto) deja lugar para el encabezado fijo al llegar desde «Contacto»", () => {
+    const { container } = render(<PieDePagina configuracion={null} />);
+    const pie = container.querySelector("footer#contacto");
+    expect(pie?.className).toMatch(/scroll-mt-\d+/);
   });
 
   it("resumirHorarios agrupa días seguidos con la misma franja", () => {
