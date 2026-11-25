@@ -18,6 +18,8 @@ ENTORNO = {
     "CSRF_TRUSTED_ORIGINS": "https://garajeruta.marcovinir.dev",
     "FRONTEND_URL": "https://garajeruta.marcovinir.dev",
     "PANEL_RUTA": "/panel",
+    "EMAIL_HOST_PASSWORD": "solo-para-pruebas",
+    "DEFAULT_FROM_EMAIL": "Garaje Ruta <garaje@marcovinir.dev>",
     "REVALIDACION_SECRETO": "solo-para-pruebas",
 }
 
@@ -37,6 +39,7 @@ print(json.dumps({
     "frontend_url": settings.FRONTEND_URL,
     "csrf": settings.CSRF_TRUSTED_ORIGINS,
     "hsts": settings.SECURE_HSTS_SECONDS,
+    "num_proxies": settings.REST_FRAMEWORK.get("NUM_PROXIES"),
 }))
 """
 
@@ -66,6 +69,20 @@ def test_produccion_exige_frontend_url():
     r = _cargar(sin="FRONTEND_URL")
     assert r.returncode != 0
     assert "FRONTEND_URL" in r.stderr
+
+
+def test_produccion_exige_clave_de_correo():
+    # Sin ella, el correo falla recién al primer envío, con el usuario esperando.
+    for nombre in ("EMAIL_HOST_PASSWORD", "DEFAULT_FROM_EMAIL"):
+        r = _cargar(sin=nombre)
+        assert r.returncode != 0
+        assert nombre in r.stderr
+
+
+def test_produccion_lee_num_proxies(monkeypatch):
+    assert _settings()["num_proxies"] == 1
+    monkeypatch.setitem(ENTORNO, "NUM_PROXIES", "2")
+    assert _settings()["num_proxies"] == 2
 
 
 def test_produccion_exige_panel_ruta():

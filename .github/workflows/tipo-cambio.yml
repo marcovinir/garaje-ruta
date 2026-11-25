@@ -26,6 +26,8 @@ jobs:
       CSRF_TRUSTED_ORIGINS: https://garajeruta.marcovinir.dev
       FRONTEND_URL: https://garajeruta.marcovinir.dev
       PANEL_RUTA: /panel
+      EMAIL_HOST_PASSWORD: sin-efecto-en-este-comando
+      DEFAULT_FROM_EMAIL: Garaje Ruta <garaje@marcovinir.dev>
       REVALIDACION_SECRETO: sin-efecto-en-este-comando
     steps:
       - name: ¿Hay base de producción?

@@ -3,7 +3,7 @@
 import os
 
 from .base import *  # noqa: F403
-from .base import DATABASES
+from .base import DATABASES, REST_FRAMEWORK
 
 
 def _lista(nombre: str) -> list[str]:
@@ -26,6 +26,10 @@ REVALIDACION_SECRETO = os.environ["REVALIDACION_SECRETO"]
 # El pooler de Supabase en modo transacción no admite sentencias preparadas (psycopg 3).
 DATABASES["default"].setdefault("OPTIONS", {})["prepare_threshold"] = None
 
+# Detrás de Vercel la IP real del cliente es la última de X-Forwarded-For: con 1 proxy, DRF
+# cuenta esa y no lo que el cliente escriba antes en el encabezado (límite del login).
+REST_FRAMEWORK["NUM_PROXIES"] = int(os.environ.get("NUM_PROXIES", "1"))
+
 # Los límites de peticiones (login, vistas) se comparten entre las instancias serverless.
 CACHES = {
     "default": {
@@ -40,7 +44,8 @@ EMAIL_HOST = "smtp.resend.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "resend")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
+DEFAULT_FROM_EMAIL = os.environ["DEFAULT_FROM_EMAIL"]
 EMAIL_TIMEOUT = 10
 
 SESSION_COOKIE_SECURE = True
