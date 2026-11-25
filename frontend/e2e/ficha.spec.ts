@@ -10,6 +10,11 @@ test("la ficha tiene Open Graph, canónica y botón de WhatsApp", async ({ page,
   expect(html).toMatch(/<meta property="og:title" content="[^"]+"/);
   expect(html).toMatch(/<meta property="og:description" content="₡[^"]+"/);
   expect(html).toMatch(new RegExp(`<link rel="canonical" href="[^"]*${auto.ruta}"`));
+  // En el <head> también para un navegador común (sin streaming de metadatos): lo que leen
+  // Lighthouse y los rastreadores que no conoce Next.
+  const cabecera = html.slice(0, html.indexOf("<body"));
+  expect(cabecera).toContain('name="description"');
+  expect(cabecera).toContain('property="og:title"');
 
   await page.goto(auto.ruta);
   await expect(page.getByRole("heading", { level: 1, name: auto.titulo })).toBeVisible();
