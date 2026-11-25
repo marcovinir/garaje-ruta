@@ -196,25 +196,15 @@ describe("formulario de artículos", () => {
 
   it("«+ Agregar marca» crea la marca y la deja elegida", async () => {
     const u = userEvent.setup();
-    let creada = false;
     servidor.use(
-      http.post("*/api/v1/panel/marcas/", async ({ request }) => {
-        creada = true;
-        return HttpResponse.json(
+      http.post("*/api/v1/panel/marcas/", async ({ request }) =>
+        HttpResponse.json(
           { id: 99, ...((await request.json()) as object), slug: "byd" },
           { status: 201 },
-        );
-      }),
-      http.get("*/api/v1/catalogos/", () =>
-        HttpResponse.json(
-          creada
-            ? {
-                ...CATALOGOS,
-                marcas: [...CATALOGOS.marcas, { id: 99, nombre: "BYD", slug: "byd", modelos: [] }],
-              }
-            : CATALOGOS,
         ),
       ),
+      // Como en Django: /catalogos/ solo trae marcas con modelos, así que la nueva no vuelve aquí.
+      http.get("*/api/v1/catalogos/", () => HttpResponse.json(CATALOGOS)),
     );
     irA("/panel/articulos/nuevo", "tipo=auto");
     renderPanel(<PaginaNuevo />, { usuario: "colaborador" });
@@ -222,7 +212,10 @@ describe("formulario de artículos", () => {
     const dialogo = screen.getByRole("dialog", { name: "Agregar marca" });
     await u.type(within(dialogo).getByLabelText("Nombre"), "BYD");
     await u.click(within(dialogo).getByRole("button", { name: "Agregar" }));
-    await waitFor(() => expect(screen.getByLabelText("Marca")).toHaveValue("99"));
+    const marca = screen.getByLabelText("Marca");
+    await waitFor(() => expect(marca).toHaveValue("99"));
+    expect(within(marca).getByRole("option", { name: "BYD" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Modelo")).toHaveValue("");
   });
 
   it("el demo no llega al formulario (Review Focus 4)", async () => {
