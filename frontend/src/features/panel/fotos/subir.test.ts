@@ -52,6 +52,18 @@ function instalarXhr() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("subirFoto", () => {
+  it("con la señal ya cancelada no envía nada y falla con AbortError", async () => {
+    instalarXhr();
+    const control = new AbortController();
+    control.abort();
+    await expect(subirFoto(new Blob(["x"]), FIRMA, () => {}, control.signal)).rejects.toMatchObject(
+      {
+        name: "AbortError",
+      },
+    );
+    expect(ultimo?.enviado).toBeUndefined();
+  });
+
   it("sube a Cloudinary con la firma y reporta el progreso", async () => {
     instalarXhr();
     const progreso: number[] = [];

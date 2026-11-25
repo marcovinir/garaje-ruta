@@ -47,6 +47,8 @@ export function subirFoto(
   senal?: AbortSignal,
 ): Promise<FotoApi> {
   return new Promise((resolver, rechazar) => {
+    // Cancelada antes de empezar (p. ej. mientras se pedía la firma): no se envía nada.
+    if (senal?.aborted) return rechazar(new DOMException("Subida cancelada.", "AbortError"));
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `https://api.cloudinary.com/v1_1/${firma.cloud_name}/image/upload`);
     xhr.upload.onprogress = (e) => {
@@ -78,7 +80,7 @@ export function subirFoto(
     xhr.onerror = () =>
       rechazar(new ErrorFoto("No se pudo subir. Revisá la conexión y reintentá."));
     xhr.onabort = () => rechazar(new DOMException("Subida cancelada.", "AbortError"));
-    senal?.addEventListener("abort", () => xhr.abort());
+    senal?.addEventListener("abort", () => xhr.abort(), { once: true });
     const formulario = new FormData();
     formulario.append("file", blob);
     formulario.append("api_key", firma.api_key);

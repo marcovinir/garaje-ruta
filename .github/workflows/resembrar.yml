@@ -3,6 +3,9 @@ name: Resembrar datos de ejemplo
 # Lunes y jueves a las 3:00 de Costa Rica (9:00 UTC): deja la demo limpia (cualquiera puede
 # entrar con el usuario demo) y, de paso, evita que Supabase gratis se pause por llevar ~7 días
 # sin uso. Hasta que exista la base de producción termina en verde sin hacer nada.
+# `sembrar --reiniciar` borra los artículos y los usuarios que no sean el admin (los invitados
+# desde el panel desaparecen; colaborador y demo se vuelven a crear). La configuración del negocio
+# (WhatsApp, dirección, horario) no se toca.
 on:
   schedule:
     - cron: "0 9 * * 1,4"

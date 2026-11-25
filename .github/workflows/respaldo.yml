@@ -2,10 +2,17 @@ name: Respaldo semanal
 
 # Domingos a las 4:00 de Costa Rica (10:00 UTC): pg_dump de producción como artefacto (30 días),
 # además del respaldo diario de Supabase. Cómo restaurarlo: docs/respaldo.md.
+#
+# El repo es público y cualquier cuenta de GitHub puede descargar sus artefactos: el respaldo se
+# sube SOLO cifrado (GPG AES256 con el secret RESPALDO_CLAVE; sin él, el workflow falla) y sin
+# los datos de las sesiones ni de la caché (django_session, cache_django).
 on:
   schedule:
     - cron: "0 10 * * 0"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: base-de-produccion
@@ -16,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL_MIGRACIONES }}
+      RESPALDO_CLAVE: ${{ secrets.RESPALDO_CLAVE }}
     steps:
       - name: ¿Hay base de producción?
         id: base
@@ -23,6 +31,9 @@ jobs:
           if [ -z "$DATABASE_URL" ]; then
             echo "Sin base de producción todavía: no se hace nada."
             echo "lista=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$RESPALDO_CLAVE" ]; then
+            echo "::error::Falta el secret RESPALDO_CLAVE: sin cifrar no se sube el respaldo."
+            exit 1
           else
             echo "lista=true" >> "$GITHUB_OUTPUT"
           fi
@@ -36,12 +47,16 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-18
       - if: steps.base.outputs.lista == 'true'
-        name: pg_dump
+        name: pg_dump y cifrado
         run: |
           archivo="respaldo-$(date -u +%F).dump"
-          /usr/lib/postgresql/18/bin/pg_dump --format=custom --no-owner --no-privileges             --dbname="$DATABASE_URL" --file="$archivo"
-          echo "ARCHIVO=$archivo" >> "$GITHUB_ENV"
-          ls -l "$archivo"
+          # Sin los datos de sesiones (una sesión robada da acceso al panel) ni de la caché.
+          /usr/lib/postgresql/18/bin/pg_dump --format=custom --no-owner --no-privileges             --exclude-table-data=django_session --exclude-table-data=cache_django             --dbname="$DATABASE_URL" --file="$archivo"
+          # La clave entra por la entrada estándar, no como argumento.
+          printf '%s' "$RESPALDO_CLAVE" | gpg --batch --yes --pinentry-mode loopback             --passphrase-fd 0 --symmetric --cipher-algo AES256             --output "$archivo.gpg" "$archivo"
+          rm "$archivo"
+          echo "ARCHIVO=$archivo.gpg" >> "$GITHUB_ENV"
+          ls -l "$archivo.gpg"
       - if: steps.base.outputs.lista == 'true'
         uses: actions/upload-artifact@v4
         with:
