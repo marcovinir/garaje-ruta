@@ -31,7 +31,7 @@ Necesitás el Postgres de Docker del proyecto (`docker compose up -d db`) y el C
      --dbname garaje_ruta_restaurada < "$TEMP/respaldo-garaje/respaldo-AAAA-MM-DD.dump/respaldo-AAAA-MM-DD.dump"
    ```
 
-   Los avisos sobre los esquemas propios de Supabase (`auth`, `storage`, `extensions`…) son esperables. Lo que importa son las tablas de la app, en `public`.
+   Los avisos y errores sobre los esquemas propios de Supabase (`auth`, `storage`, `extensions`, `vault`…) son esperables: `pg_restore` termina con «errors ignored on restore». Lo que importa son las tablas de la app, en `public`.
 
 4. **Comprobar** que los datos están:
 
@@ -59,4 +59,4 @@ Primero, el respaldo diario de Supabase, desde su panel. Si no sirve, crear un p
 
 | Fecha | Respaldo | Resultado |
 |---|---|---|
-| (pendiente) | | |
+| 2026-11-24 | `respaldo-2026-11-25.dump` (corrida 45540472655, 434 KB) | ✅ Restaurado en `garaje_ruta_restaurada` (Postgres 18 de Docker). 3 errores ignorados, todos de `vault` (esquema de Supabase). Conteos: 120 artículos, 196 ventas, 3 usuarios, 3940 vistas, 60 tipos de cambio y 255 fotos: los del sembrado (195 ventas) más una venta de prueba de Marco hecha antes del respaldo. `manage.py check` sin problemas, todas las migraciones aplicadas y `migrate --check` sin pendientes. Base y archivo borrados. |
