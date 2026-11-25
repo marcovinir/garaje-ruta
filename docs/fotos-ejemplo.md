@@ -70,3 +70,7 @@ Para repuestos el estilo cambia a:
 | repuesto-14 | Tapicería de asiento delantero en tela gris |
 | repuesto-15 | Culata de motor de 4 cilindros |
 | repuesto-16 | Varias piezas pequeñas ordenadas: bujías, filtros y sensores |
+
+## Cómo las usa `sembrar`
+
+Para que la foto coincida con la ficha, `sembrar` solo crea autos de los modelos que tienen foto exterior propia (`FOTOS_MODELO` en `apps/comun/semillas.py`), con el color de la foto. Cada auto lleva sus exteriores, el interior de su carrocería, el motor (si no es eléctrico), el tablero digital (desde 2016) y la vista del patio. Cada repuesto lleva solo la foto de su pieza (`FOTO_PIEZA`). Para sumar un modelo, generá su foto, agregala a la tabla de arriba y a `FOTOS_MODELO`.

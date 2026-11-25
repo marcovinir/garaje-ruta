@@ -155,9 +155,11 @@ class Command(BaseCommand):
         equipamiento = list(Equipamiento.objects.all())
         anio_actual = self.ahora.year
 
+        # Solo modelos con foto propia, para que la foto coincida con la ficha.
+        con_foto = [(m, d) for m, d in modelos if m.nombre in semillas.FOTOS_MODELO]
         articulos = []
         for i in range(TOTAL_AUTOS):
-            modelo, (_, _, carroceria, cilindrada, combustible, base) = modelos[i % len(modelos)]
+            modelo, (_, _, carroceria, cilindrada, combustible, base) = con_foto[i % len(con_foto)]
             anio = rng.randint(semillas.ANIO_MINIMO.get(modelo.nombre, 2008), anio_actual)
             antiguedad = anio_actual - anio
             km = max(5_000, antiguedad * rng.randint(9_000, 18_000))
@@ -214,8 +216,8 @@ class Command(BaseCommand):
                 combustible=combustibles[combustible],
                 traccion=tracciones[traccion],
                 carroceria=carrocerias[carroceria],
-                color_exterior=rng.choice(semillas.COLORES),
-                color_interior=rng.choice(semillas.COLORES_INTERIOR),
+                color_exterior=semillas.FOTOS_MODELO[modelo.nombre][1],
+                color_interior=semillas.FOTO_INTERIOR.get(carroceria, ("", "Gris"))[1],
                 cilindrada_cc=cilindrada,
                 puertas=2 if carroceria == "comercial" else rng.choice([4, 5]),
                 pasajeros=3 if carroceria == "comercial" else rng.choice([5, 5, 5, 7]),
@@ -244,7 +246,7 @@ class Command(BaseCommand):
                     cuantos,
                 )
             )
-            self._fotos(articulo, semillas.FOTOS_AUTOS, rng.randint(4, 8), i)
+            self._fotos(articulo, semillas.fotos_auto(modelo.nombre, carroceria, combustible, anio))
             self._historial_creacion(articulo)
             if estado == EstadoArticulo.VENDIDO:
                 self._vender(articulo, 1, precio)
@@ -302,7 +304,7 @@ class Command(BaseCommand):
                     anio_desde=desde_otro,
                     anio_hasta=min(anio_actual, desde_otro + rng.randint(1, 5)),
                 )
-            self._fotos(articulo, semillas.FOTOS_REPUESTOS, rng.randint(2, 4), i)
+            self._fotos(articulo, [semillas.FOTO_PIEZA[pieza]])
             self._historial_creacion(articulo)
             for _ in range(vendidas):
                 self._vender(articulo, 1, precio)
@@ -311,16 +313,10 @@ class Command(BaseCommand):
 
     # --- Piezas comunes ---------------------------------------------------------------------
 
-    def _fotos(self, articulo: Articulo, catalogo: list[str], cuantas: int, inicio: int) -> None:
+    def _fotos(self, articulo: Articulo, public_ids: list[str]) -> None:
         Foto.objects.bulk_create(
-            Foto(
-                articulo=articulo,
-                public_id=catalogo[(inicio * 3 + n) % len(catalogo)],
-                ancho=1600,
-                alto=1200,
-                orden=n + 1,
-            )
-            for n in range(cuantas)
+            Foto(articulo=articulo, public_id=public_id, ancho=1600, alto=1200, orden=n + 1)
+            for n, public_id in enumerate(public_ids)
         )
 
     def _historial_creacion(self, articulo: Articulo) -> None:

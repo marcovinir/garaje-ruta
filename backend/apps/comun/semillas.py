@@ -101,9 +101,6 @@ def equipamiento_posible(
     return not (nombre in DESDE_2016 and anio < 2016)
 
 
-COLORES = ["Blanco", "Negro", "Gris oscuro", "Plateado", "Rojo", "Azul", "Beige", "Verde"]
-COLORES_INTERIOR = ["Negro", "Gris", "Beige"]
-
 # Hijas de las categorías raíz que siembra la migración de catálogos: (slug del padre, nombre, slug)
 CATEGORIAS_HIJAS = [
     ("sistema-electrico", "Alternador", "alternador"),
@@ -143,6 +140,78 @@ PIEZAS = [
 # Fotos de ejemplo en Cloudinary (las sube un comando del Plan 2).
 FOTOS_AUTOS = [f"garaje-ruta/ejemplo/auto-{n:02d}" for n in range(1, 25)]
 FOTOS_REPUESTOS = [f"garaje-ruta/ejemplo/repuesto-{n:02d}" for n in range(1, 17)]
+
+
+def _foto(nombre: str) -> str:
+    return f"garaje-ruta/ejemplo/{nombre}"
+
+
+# Qué muestra cada foto (docs/fotos-ejemplo.md). Solo se siembran autos de estos modelos,
+# para que la foto coincida con la ficha: modelo → (fotos exteriores, color de la foto).
+FOTOS_MODELO = {
+    "Corolla": ([_foto("auto-01"), _foto("auto-02")], "Blanco"),
+    "RAV4": ([_foto("auto-04")], "Gris oscuro"),
+    "Hilux": ([_foto("auto-05")], "Plateado"),
+    "Swift": ([_foto("auto-06")], "Rojo"),
+    "Kona": ([_foto("auto-08")], "Azul"),
+    "Sentra": ([_foto("auto-09")], "Plateado"),
+    "Montero Sport": ([_foto("auto-10")], "Blanco"),
+    "D-Max": ([_foto("auto-11")], "Blanco"),
+    "Leaf": ([_foto("auto-12")], "Blanco"),
+    "Sportage": ([_foto("auto-14")], "Negro"),
+    "Mazda 3": ([_foto("auto-15")], "Azul"),
+    "Jimny": ([_foto("auto-17")], "Verde"),
+    "NPR": ([_foto("auto-18")], "Blanco"),
+    "Fit": ([_foto("auto-19")], "Plateado"),
+    "Yuan Plus": ([_foto("auto-20")], "Plateado"),
+    "Ranger": ([_foto("auto-21")], "Rojo"),
+    "Explorer": ([_foto("auto-23")], "Blanco"),
+}
+# Interior según la carrocería: (foto, color del interior). El camión no lleva interior.
+FOTO_INTERIOR = {
+    "sedan": (_foto("auto-03"), "Negro"),
+    "hatchback": (_foto("auto-03"), "Negro"),
+    "crossover": (_foto("auto-03"), "Negro"),
+    "suv": (_foto("auto-07"), "Beige"),
+    "pickup": (_foto("auto-16"), "Gris"),
+}
+FOTO_MOTOR = _foto("auto-13")  # motor de combustión: no va en eléctricos
+FOTO_TABLERO = _foto("auto-22")  # tablero digital con CarPlay: desde 2016
+FOTO_PATIO = _foto("auto-24")
+
+# Cada pieza de PIEZAS con su foto (los dos faros comparten la misma).
+FOTO_PIEZA = {
+    "Alternador": _foto("repuesto-01"),
+    "Batería": _foto("repuesto-02"),
+    "Motor de arranque": _foto("repuesto-03"),
+    "Pastillas de freno delanteras": _foto("repuesto-04"),
+    "Discos de freno delanteros": _foto("repuesto-05"),
+    "Faro delantero izquierdo": _foto("repuesto-06"),
+    "Faro delantero derecho": _foto("repuesto-06"),
+    "Stop trasero": _foto("repuesto-07"),
+    "Amortiguador delantero": _foto("repuesto-08"),
+    "Radiador": _foto("repuesto-09"),
+    "Bomba de agua": _foto("repuesto-10"),
+    "Espejo retrovisor": _foto("repuesto-11"),
+    "Aro de lujo 16 pulgadas": _foto("repuesto-12"),
+    "Caja de cambios manual": _foto("repuesto-13"),
+    "Tapicería completa": _foto("repuesto-14"),
+    "Culata": _foto("repuesto-15"),
+}
+
+
+def fotos_auto(modelo: str, carroceria: str, combustible: str, anio: int) -> list[str]:
+    """Las fotos de un auto sembrado, en orden: exteriores, interior, motor, tablero y patio."""
+    fotos = list(FOTOS_MODELO[modelo][0])
+    if carroceria in FOTO_INTERIOR:
+        fotos.append(FOTO_INTERIOR[carroceria][0])
+    if combustible != "Eléctrico":
+        fotos.append(FOTO_MOTOR)
+    if anio >= 2016:
+        fotos.append(FOTO_TABLERO)
+    fotos.append(FOTO_PATIO)
+    return fotos
+
 
 DESCRIPCION_AUTO = (
     "{titulo} en {estado}. {km} km, {transmision}, {combustible}. "
