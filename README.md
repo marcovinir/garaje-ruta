@@ -12,7 +12,7 @@ Catálogo web y panel de administración para **Garaje Ruta**, un patio en Hered
 > - **Usuario:** `demo@garajeruta.test`
 > - **Clave:** `Demo-Garaje-2026`
 >
-> El usuario demo ve todo el panel pero no puede cambiar nada. Los datos de ejemplo se reinician los lunes y jueves.
+> El usuario demo ve todo el panel pero no puede cambiar nada. Los datos de ejemplo se reinician los lunes y jueves (los usuarios invitados desde el panel se borran).
 
 El patio publicaba todo en Facebook Marketplace. Este proyecto le da un canal propio:
 
@@ -86,15 +86,15 @@ El rewrite de `/api/v1/*` hace que el navegador vea un solo dominio: la cookie d
 
 ## Pruebas
 
-| Tipo                                      | Cantidad        | Cómo correrlas                                      |
-| ----------------------------------------- | --------------- | --------------------------------------------------- |
-| Backend (pytest)                          | 307             | `docker compose run --rm backend pytest -q`         |
-| Frontend (Vitest + Testing Library + MSW) | 208             | `cd frontend && npm test`                           |
-| E2E (Playwright, celular y escritorio)    | 4 historias × 2 | `cd frontend && npm run e2e` con el stack levantado |
+| Tipo                                      | Cantidad      | Cómo correrlas                                      |
+| ----------------------------------------- | ------------- | --------------------------------------------------- |
+| Backend (pytest)                          | 307           | `docker compose run --rm backend pytest -q`         |
+| Frontend (Vitest + Testing Library + MSW) | 251           | `cd frontend && npm test`                           |
+| E2E (Playwright, celular y escritorio)    | 6 pruebas × 2 | `cd frontend && npm run e2e` con el stack levantado |
 
 El CI de GitHub corre las tres en cada PR, más Lighthouse CI. La rama `main` está protegida: todo entra por PR con el CI en verde.
 
-Las E2E cubren publicar un auto con fotos (HU-01), la ficha con Open Graph y WhatsApp (HU-02/03), la redirección 308 y el 404, y vender y deshacer (HU-04). La de la ficha también corre contra producción, solo leyendo: `E2E_URL=https://garajeruta.marcovinir.dev npx playwright test ficha.spec.ts`.
+Las E2E cubren publicar un auto con fotos (HU-01), la ficha con Open Graph y WhatsApp (HU-02/03), la redirección 308 y el 404, vender y deshacer (HU-04), y que el encabezado no se rompa al desplazarse. La de la ficha también corre contra producción, solo leyendo: `E2E_URL=https://garajeruta.marcovinir.dev npx playwright test ficha.spec.ts`.
 
 ## Lighthouse
 
@@ -112,12 +112,14 @@ En el CI, Accesibilidad ≥ 90 y SEO ≥ 95 bloquean el PR; Rendimiento y Buenas
 ## Respaldo
 
 - **Diario:** el de Supabase, incluido en el plan gratis.
-- **Semanal propio:** el workflow `respaldo.yml` hace `pg_dump` los domingos y lo guarda 30 días como artefacto de GitHub. Vive fuera de Supabase y se puede restaurar en cualquier Postgres.
+- **Semanal propio:** el workflow `respaldo.yml` hace `pg_dump` los domingos, lo **cifra** con GPG y lo guarda 30 días como artefacto de GitHub. Vive fuera de Supabase y se puede restaurar en cualquier Postgres. Como el repo es público (cualquier cuenta de GitHub puede descargar sus artefactos), va cifrado y sin los datos de sesiones ni de caché.
 - **Restauración probada** el 24 nov 2026: el respaldo se restauró en una base aparte, con los conteos de producción, y Django corrió contra ella sin migraciones pendientes. El procedimiento está en [`docs/respaldo.md`](docs/respaldo.md).
 
 ## Limitaciones
 
 - **Supabase gratis se pausa** tras una semana sin uso. El resembrado de lunes y jueves lo mantiene activo.
+- **Workflows programados:** en un repo público, GitHub los desactiva tras 60 días sin actividad. Si pasa, se reactivan desde _Actions_ (o con cualquier commit).
+- **El reinicio de lunes y jueves borra los usuarios invitados** desde el panel; el admin, el colaborador y el demo se conservan, igual que la configuración del negocio.
 - **Funciones frías de Vercel:** la primera petición después de un rato sin visitas tarda más.
 - **Tipo de cambio:** el oficial del BCCR queda pendiente en [#47](https://github.com/marcovinir/garaje-ruta/issues/47).
 - **Solo 17 modelos tienen foto propia:** los autos de ejemplo se reparten entre ellos para que la foto coincida con la ficha (ver [`docs/fotos-ejemplo.md`](docs/fotos-ejemplo.md)).

@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+import { cabecerasSeguridad } from "./src/shared/config/cabeceras";
 import { reescriturasApi } from "./src/shared/config/rewrites";
 
 const nextConfig: NextConfig = {
@@ -18,6 +19,9 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
   // Las fotos son public_id de Cloudinary: las transforma Cloudinary, no Next.
   images: { loader: "custom", loaderFile: "./src/shared/lib/cargador-imagenes.ts" },
+  async headers() {
+    return cabecerasSeguridad();
+  },
   async rewrites() {
     return reescriturasApi(process.env.BACKEND_URL ?? "http://localhost:8000");
   },

@@ -199,6 +199,28 @@ describe("editor de fotos", () => {
     await waitFor(() => expect(c.pendientes).toHaveLength(2));
   });
 
+  it("quitar una foto mientras se pide la firma no la sube", async () => {
+    const c = dependenciasControladas();
+    let darFirma: () => void = () => {};
+    const firmar = () =>
+      new Promise<Awaited<ReturnType<DependenciasFotos["firmar"]>>>((resolver) => {
+        darFirma = () =>
+          resolver({
+            cloud_name: "garaje",
+            api_key: "1",
+            timestamp: Math.floor(Date.now() / 1000),
+            folder: "f",
+            signature: "s",
+          });
+      });
+    renderPanel(<Prueba deps={{ ...c.deps, firmar }} />);
+    await elegir(1);
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Quitar la foto 1" }));
+    await act(async () => darFirma());
+    await waitFor(() => expect(screen.getByLabelText("ocupado")).toHaveTextContent("false"));
+    expect(c.pendientes).toHaveLength(0);
+  });
+
   it("«Hacer principal» la pone primera y «Mover después» cambia el orden", async () => {
     const u = userEvent.setup();
     renderPanel(

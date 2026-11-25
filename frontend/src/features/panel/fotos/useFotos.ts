@@ -101,7 +101,9 @@ export function useFotos(iniciales: FotoApi[], dependencias: Partial<Dependencia
           const alProgreso = (progreso: number) => cambiarItem(clave, { progreso });
           let foto: FotoApi;
           try {
-            foto = await subir(blob, await obtenerFirma(), alProgreso, control.signal);
+            const firmaActual = await obtenerFirma();
+            if (control.signal.aborted) return;
+            foto = await subir(blob, firmaActual, alProgreso, control.signal);
           } catch (error) {
             if (!(error instanceof ErrorFirma)) throw error;
             foto = await subir(blob, await obtenerFirma(true), alProgreso, control.signal);
