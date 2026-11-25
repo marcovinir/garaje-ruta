@@ -11,6 +11,7 @@ import { ChipsFiltros } from "./ChipsFiltros";
 import { HojaFiltros } from "./HojaFiltros";
 import { Orden } from "./Orden";
 import { Paginacion } from "./Paginacion";
+import { AvisoCompatibilidad } from "./AvisoCompatibilidad";
 import { PanelFiltros } from "./PanelFiltros";
 
 const catalogos: Catalogos = {
@@ -106,6 +107,7 @@ describe("PanelFiltros", () => {
       <PanelFiltros tipo="auto" id="f" catalogos={catalogos} filtros={{ orden: "precio_asc" }} />,
     );
     await usuario.selectOptions(screen.getByLabelText("Marca"), "3");
+    await usuario.click(screen.getByText("Más filtros"));
     await usuario.click(screen.getByLabelText("Aire acondicionado"));
     await usuario.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     expect(push).toHaveBeenCalledWith("/autos?orden=precio_asc&marca=3&equipamiento=1");
@@ -130,7 +132,7 @@ describe("PanelFiltros", () => {
     expect(screen.getByRole("form", { name: "Filtros" })).toHaveAttribute("action", "/repuestos");
     expect(screen.getByLabelText("Categoría")).toHaveValue("pastillas");
     const vehiculo = screen.getByRole("group", { name: "Buscar por vehículo" });
-    expect(within(vehiculo).getByLabelText("Marca")).toHaveValue("3");
+    expect(within(vehiculo).getByLabelText("Marca del vehículo")).toHaveValue("3");
     expect(screen.queryByLabelText("Kilometraje máximo")).not.toBeInTheDocument();
   });
 });
@@ -197,6 +199,109 @@ describe("Orden y Paginacion", () => {
 
   it("no pagina si todo cabe en una página", () => {
     const { container } = render(<Paginacion base="/autos" filtros={{}} total={20} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("Filtros de la etapa #124", () => {
+  it("deja principales visibles y avanzados plegados por defecto", async () => {
+    const usuario = userEvent.setup();
+    render(<PanelFiltros tipo="auto" id="f" catalogos={catalogos} filtros={{}} />);
+    const resumen = screen.getByText("Más filtros");
+    const avanzados = resumen.closest("details")!;
+    expect(avanzados).not.toHaveAttribute("open");
+    for (const nombre of [
+      "Kilometraje máximo",
+      "Combustible",
+      "Tracción",
+      "Aire acondicionado",
+      "Solo ofertas",
+    ]) {
+      expect(avanzados).toContainElement(screen.getByLabelText(nombre));
+    }
+    for (const nombre of [
+      "Marca",
+      "Modelo",
+      "Carrocería",
+      "Año desde",
+      "Año hasta",
+      "Precio desde (₡)",
+      "Precio hasta (₡)",
+      "Transmisión",
+    ]) {
+      expect(avanzados).not.toContainElement(screen.getByLabelText(nombre));
+    }
+    await usuario.click(resumen);
+    expect(avanzados).toHaveAttribute("open");
+  });
+  it.each(["km_max", "combustible", "traccion", "equipamiento", "ofertas"])(
+    "abre avanzados si %s está activo en la URL",
+    (clave) => {
+      render(<PanelFiltros tipo="auto" id="f" catalogos={catalogos} filtros={{ [clave]: "1" }} />);
+      expect(screen.getByText("Más filtros").closest("details")).toHaveAttribute("open");
+    },
+  );
+  it("prioriza vehículo antes de categoría, condición y precio", () => {
+    render(<PanelFiltros tipo="repuesto" id="f" catalogos={catalogos} filtros={{}} />);
+    const vehiculo = screen.getByRole("group", { name: "Buscar por vehículo" });
+    expect(
+      vehiculo.compareDocumentPosition(screen.getByLabelText("Categoría")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByLabelText("Categoría")
+        .compareDocumentPosition(screen.getByLabelText("Condición")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByLabelText("Condición")
+        .compareDocumentPosition(screen.getByLabelText("Precio desde (₡)")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+  it("avisa el vehículo y lo quita conservando búsqueda, categoría, precio, ofertas y orden", () => {
+    render(
+      <AvisoCompatibilidad
+        catalogos={catalogos}
+        filtros={{
+          compatible_marca: "3",
+          compatible_modelo: "12",
+          compatible_anio: "2020",
+          categoria: "pastillas",
+          q: "ABC",
+          precio_max: "85000",
+          ofertas: "1",
+          orden: "precio_asc",
+          page: "2",
+        }}
+      />,
+    );
+    expect(
+      screen.getByText("Mostrando repuestos compatibles con Toyota Corolla 2020"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Quitar vehículo" })).toHaveAttribute(
+      "href",
+      "/repuestos?categoria=pastillas&ofertas=1&orden=precio_asc&precio_max=85000&q=ABC",
+    );
+  });
+  it.each([
+    [{ compatible_marca: "3" }, "Toyota"],
+    [{ compatible_modelo: "12" }, "Toyota Corolla"],
+    [{ compatible_anio: "2020" }, "vehículos del año 2020"],
+  ])("admite una selección parcial %j", (filtros, descripcion) => {
+    render(<AvisoCompatibilidad catalogos={catalogos} filtros={filtros} />);
+    expect(
+      screen.getByText(`Mostrando repuestos compatibles con ${descripcion}`),
+    ).toBeInTheDocument();
+  });
+  it("no inventa nombres para ids desconocidos ni muestra aviso sin vehículo", () => {
+    const { container, rerender } = render(
+      <AvisoCompatibilidad catalogos={catalogos} filtros={{}} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    rerender(<AvisoCompatibilidad catalogos={catalogos} filtros={{ compatible_marca: "999" }} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

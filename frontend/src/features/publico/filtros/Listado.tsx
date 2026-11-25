@@ -6,6 +6,7 @@ import { obtenerArticulos, obtenerCatalogos } from "@/shared/api/datos";
 import { Esqueleto } from "../componentes/Esqueleto";
 import { MensajeError } from "../componentes/MensajeError";
 import { TarjetaArticulo } from "../componentes/TarjetaArticulo";
+import { AvisoCompatibilidad } from "./AvisoCompatibilidad";
 import { ChipsFiltros } from "./ChipsFiltros";
 import { HojaFiltros } from "./HojaFiltros";
 import { Orden } from "./Orden";
@@ -82,6 +83,9 @@ async function Resultados({
           </div>
         </div>
         {catalogos ? <ChipsFiltros base={base} filtros={filtros} catalogos={catalogos} /> : null}
+        {tipo === "repuesto" && catalogos ? (
+          <AvisoCompatibilidad filtros={filtros} catalogos={catalogos} />
+        ) : null}
         <h2 className="sr-only">Resultados</h2>
         {pagina.results.length ? (
           <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
