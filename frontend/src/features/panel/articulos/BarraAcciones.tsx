@@ -21,6 +21,32 @@ import type { EstadoArticulo, FilaPanel } from "./tipos";
 const OPCION =
   "hover:bg-campo flex min-h-11 w-full items-center rounded-lg px-3 text-left font-semibold";
 
+/** Lo que pregunta el diálogo antes de una acción que cambia la web o las ventas. */
+type Confirmacion = { titulo: string; texto: string; boton: string; hacer: () => void };
+
+const CONFIRMAR_ESTADO: Record<EstadoArticulo, (titulo: string) => Omit<Confirmacion, "hacer">> = {
+  reservado: (t) => ({
+    titulo: "¿Reservar?",
+    texto: `«${t}» sigue en la web, marcado como reservado.`,
+    boton: "Sí, reservar",
+  }),
+  oculto: (t) => ({
+    titulo: "¿Ocultar?",
+    texto: `«${t}» deja de verse en la web hasta que lo publiqués.`,
+    boton: "Sí, ocultar",
+  }),
+  disponible: (t) => ({
+    titulo: "¿Ponerlo a la venta?",
+    texto: `«${t}» queda disponible en la web.`,
+    boton: "Sí, ponerlo a la venta",
+  }),
+  vendido: (t) => ({
+    titulo: "¿Marcar como vendido?",
+    texto: `«${t}» sale de la web.`,
+    boton: "Sí, marcar vendido",
+  }),
+};
+
 /**
  * Acciones rápidas de una fila: vender (con «Deshacer» en el aviso), editar, compartir y el menú
  * «Más» con estados, duplicar y eliminar. Cada acción se muestra solo con su permiso (§9).
@@ -42,6 +68,7 @@ export function BarraAcciones({
   const [vendiendoVarios, setVendiendoVarios] = useState(false);
   const [cantidad, setCantidad] = useState("1");
   const [eliminando, setEliminando] = useState(false);
+  const [confirmacion, setConfirmacion] = useState<Confirmacion | null>(null);
 
   const alFallar = (error: unknown) => {
     avisar(mensajeDe(error), { tipo: "error" });
@@ -104,15 +131,44 @@ export function BarraAcciones({
   const cambios = puede("articulos.cambiar_estado") ? transiciones(fila.estado) : [];
   const opciones = [
     ...(compacta ? [{ etiqueta: "Compartir", hacer: () => void compartir() }] : []),
-    ...cambios.map((c) => ({ etiqueta: c.etiqueta, hacer: () => estado.mutate(c.estado) })),
+    ...cambios.map((c) => ({
+      etiqueta: c.etiqueta,
+      hacer: () =>
+        setConfirmacion({
+          ...CONFIRMAR_ESTADO[c.estado](fila.titulo),
+          hacer: () => estado.mutate(c.estado),
+        }),
+    })),
     ...(puedeVender && !esAuto && aLaVenta && stock > 1
       ? [{ etiqueta: "Vendí varios…", hacer: () => setVendiendoVarios(true) }]
       : []),
     ...(puedeVender && esAuto && fila.estado === "vendido"
-      ? [{ etiqueta: "Deshacer venta", hacer: () => deshacer.mutate() }]
+      ? [
+          {
+            etiqueta: "Deshacer venta",
+            hacer: () =>
+              setConfirmacion({
+                titulo: "¿Deshacer la venta?",
+                texto: `«${fila.titulo}» vuelve a estar disponible en la web y se borra la venta.`,
+                boton: "Sí, deshacer venta",
+                hacer: () => deshacer.mutate(),
+              }),
+          },
+        ]
       : []),
     ...(puedeVender && !esAuto
-      ? [{ etiqueta: "Deshacer la última venta", hacer: () => deshacer.mutate() }]
+      ? [
+          {
+            etiqueta: "Deshacer la última venta",
+            hacer: () =>
+              setConfirmacion({
+                titulo: "¿Deshacer la última venta?",
+                texto: `Se borra la última venta de «${fila.titulo}» y lo vendido vuelve al stock.`,
+                boton: "Sí, deshacer venta",
+                hacer: () => deshacer.mutate(),
+              }),
+          },
+        ]
       : []),
     ...(puede("articulos.crear") ? [{ etiqueta: "Duplicar", hacer: () => duplicar.mutate() }] : []),
     ...(puede("articulos.eliminar")
@@ -138,7 +194,23 @@ export function BarraAcciones({
         <button
           type="button"
           disabled={vender.isPending}
-          onClick={() => vender.mutate(1)}
+          onClick={() =>
+            setConfirmacion(
+              esAuto
+                ? {
+                    titulo: "¿Marcar como vendido?",
+                    texto: `«${fila.titulo}» sale de la web y queda registrada la venta.`,
+                    boton: "Sí, marcar vendido",
+                    hacer: () => vender.mutate(1),
+                  }
+                : {
+                    titulo: "¿Registrar la venta de 1?",
+                    texto: `De «${fila.titulo}» ${stock - 1 === 1 ? "queda 1" : `quedan ${stock - 1}`}.`,
+                    boton: "Sí, registrar venta",
+                    hacer: () => vender.mutate(1),
+                  },
+            )
+          }
           className={BOTON_PRIMARIO}
         >
           {esAuto ? "Vendido" : "Vendí 1"}
@@ -196,6 +268,19 @@ export function BarraAcciones({
         </div>
       ) : null}
 
+      <Dialogo
+        abierto={confirmacion !== null}
+        titulo={confirmacion?.titulo ?? ""}
+        textoConfirmar={confirmacion?.boton}
+        textoCancelar="No"
+        alConfirmar={() => {
+          confirmacion?.hacer();
+          setConfirmacion(null);
+        }}
+        alCerrar={() => setConfirmacion(null)}
+      >
+        {confirmacion?.texto}
+      </Dialogo>
       <Dialogo
         abierto={vendiendoVarios}
         titulo={`¿Cuántos vendiste de «${fila.titulo}»?`}

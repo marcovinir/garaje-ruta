@@ -28,6 +28,12 @@ async function tarjeta(nombre: string) {
   return screen.findByRole("article", { name: nombre });
 }
 
+/** Responde el diálogo de confirmación con el botón que lleva el nombre de la acción. */
+async function confirmar(boton: string) {
+  const dialogo = await screen.findByRole("dialog");
+  await userEvent.setup().click(within(dialogo).getByRole("button", { name: boton }));
+}
+
 async function abrirMas(card: HTMLElement) {
   await userEvent.setup().click(within(card).getByRole("button", { name: "Más acciones" }));
 }
@@ -46,6 +52,7 @@ describe("acciones rápidas", () => {
     renderPanel(<PaginaArticulos />);
     const card = await tarjeta("Pastillas de freno Corolla");
     await usuario.click(within(card).getByRole("button", { name: "Vendí 1" }));
+    await confirmar("Sí, registrar venta");
     expect(await within(card).findByText("Quedan 1")).toBeInTheDocument();
     expect(screen.getByText("Vendido: Pastillas de freno Corolla")).toBeInTheDocument();
     await usuario.click(screen.getByRole("button", { name: "Deshacer" }));
@@ -72,6 +79,7 @@ describe("acciones rápidas", () => {
     renderPanel(<PaginaArticulos />);
     const card = await tarjeta("Pastillas de freno Corolla");
     await usuario.click(within(card).getByRole("button", { name: "Vendí 1" }));
+    await confirmar("Sí, registrar venta");
     expect(await screen.findByText("Solo quedan 0.")).toBeInTheDocument();
     expect(await within(card).findByText("Agotado")).toBeInTheDocument();
   });
@@ -98,8 +106,54 @@ describe("acciones rápidas", () => {
     const card = await tarjeta("Toyota Corolla 2015");
     await abrirMas(card);
     await usuario.click(within(card).getByRole("button", { name: "Reservar" }));
+    await confirmar("Sí, reservar");
     expect(await within(card).findByText("Reservado")).toBeInTheDocument();
     expect(cuerpo).toEqual({ estado: "reservado" });
+  });
+
+  it("«Vendido», cambiar el estado y deshacer una venta preguntan antes; «No» no llama a la API", async () => {
+    const usuario = userEvent.setup();
+    let llamadas = 0;
+    servidor.use(
+      http.post("*/api/v1/panel/articulos/:id/:accion/", () => {
+        llamadas += 1;
+        return HttpResponse.json({});
+      }),
+    );
+    renderPanel(<PaginaArticulos />);
+    const corolla = await tarjeta("Toyota Corolla 2015");
+    await usuario.click(within(corolla).getByRole("button", { name: "Vendido" }));
+    let dialogo = await screen.findByRole("dialog", { name: "¿Marcar como vendido?" });
+    expect(dialogo).toHaveTextContent("Toyota Corolla 2015");
+    await usuario.click(within(dialogo).getByRole("button", { name: "No" }));
+    await abrirMas(corolla);
+    await usuario.click(within(corolla).getByRole("button", { name: "Ocultar" }));
+    dialogo = await screen.findByRole("dialog", { name: "¿Ocultar?" });
+    await usuario.click(within(dialogo).getByRole("button", { name: "No" }));
+    const rav4 = await tarjeta("Toyota RAV4 2018");
+    await abrirMas(rav4);
+    await usuario.click(within(rav4).getByRole("button", { name: "Deshacer venta" }));
+    dialogo = await screen.findByRole("dialog", { name: "¿Deshacer la venta?" });
+    await usuario.click(within(dialogo).getByRole("button", { name: "No" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(llamadas).toBe(0);
+  });
+
+  it("confirmar «Deshacer venta» la deshace", async () => {
+    const usuario = userEvent.setup();
+    let deshecha = false;
+    servidor.use(
+      http.post("*/api/v1/panel/articulos/103/deshacer-venta/", () => {
+        deshecha = true;
+        return HttpResponse.json({ ...FILAS[2], estado: "disponible" });
+      }),
+    );
+    renderPanel(<PaginaArticulos />);
+    const rav4 = await tarjeta("Toyota RAV4 2018");
+    await abrirMas(rav4);
+    await usuario.click(within(rav4).getByRole("button", { name: "Deshacer venta" }));
+    await confirmar("Sí, deshacer venta");
+    await waitFor(() => expect(deshecha).toBe(true));
   });
 
   it("eliminar pide confirmación; cancelar no llama a la API", async () => {
