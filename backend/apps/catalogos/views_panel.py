@@ -43,8 +43,11 @@ def _serializer(modelo_, campos: list[str], con_slug: bool = False):
                 extra_kwargs["slug"] = {"required": False, "validators": _unico(modelo_)}
 
         def validate(self, datos):
-            if con_slug and not datos.get("slug") and "nombre" in datos:
-                datos["slug"] = slugify(datos["nombre"])
+            # Solo al crear: renombrar conserva el slug para no romper URL ya compartidas.
+            if con_slug and self.instance is None and not datos.get("slug"):
+                datos["slug"] = slugify(datos.get("nombre", ""))
+                if modelo_.objects.filter(slug=datos["slug"]).exists():
+                    raise serializers.ValidationError({"nombre": YA_EXISTE})
             return datos
 
     Serializer.__name__ = f"{modelo_.__name__}PanelSerializer"
@@ -63,8 +66,11 @@ class ModeloPanelSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, datos):
-        if not datos.get("slug") and "nombre" in datos:
-            datos["slug"] = slugify(datos["nombre"])
+        # Solo al crear: renombrar conserva el slug para no romper URL ya compartidas.
+        if self.instance is None and not datos.get("slug"):
+            datos["slug"] = slugify(datos.get("nombre", ""))
+            if Modelo.objects.filter(marca=datos.get("marca"), slug=datos["slug"]).exists():
+                raise serializers.ValidationError({"nombre": YA_EXISTE})
         return datos
 
 

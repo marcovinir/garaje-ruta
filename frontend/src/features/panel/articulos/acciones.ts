@@ -14,8 +14,12 @@ export const accionesApi = {
       metodo: "POST",
       cuerpo: { cantidad },
     }),
-  deshacerVenta: (id: number) =>
-    api<FilaPanel>(`/panel/articulos/${id}/deshacer-venta/`, { metodo: "POST" }),
+  /** Con `ventaId` deshace esa venta; sin él, la última del artículo. */
+  deshacerVenta: (id: number, ventaId?: number) =>
+    api<FilaPanel>(`/panel/articulos/${id}/deshacer-venta/`, {
+      metodo: "POST",
+      cuerpo: ventaId === undefined ? undefined : { venta_id: ventaId },
+    }),
   duplicar: (id: number) =>
     api<{ id: number }>(`/panel/articulos/${id}/duplicar/`, { metodo: "POST" }),
   eliminar: (id: number) => api<void>(`/panel/articulos/${id}/`, { metodo: "DELETE" }),

@@ -51,7 +51,7 @@ CAMPOS_AUTO = [
     "placa_termina_en",
 ]
 CAMPOS_REPUESTO = ["categoria_pieza", "condicion", "cantidad", "codigo_interno", "numero_parte"]
-CON_VENTAS = "Este artículo tiene ventas: ocúltalo en lugar de borrarlo."
+CON_VENTAS = "Este artículo tiene ventas: ocultalo en lugar de borrarlo."
 
 
 def registrar(articulo: Articulo, usuario, accion: str, detalle: dict | None = None) -> None:
@@ -193,9 +193,10 @@ TRANSICIONES = {
     EstadoArticulo.OCULTO: {EstadoArticulo.DISPONIBLE, EstadoArticulo.RESERVADO},
 }
 USA_VENDER = "Para vender usa “Vendido” o “Vendí”."
-DESHAZ_LA_VENTA = "Deshaz la venta para cambiar el estado."
+DESHAZ_LA_VENTA = "Deshacé la venta para cambiar el estado."
 NO_ESTA_A_LA_VENTA = "Este artículo no está a la venta."
 SIN_VENTAS = "No hay ventas para deshacer."
+VENTA_YA_DESHECHA = "Esa venta ya se deshizo."
 A_LA_VENTA = {EstadoArticulo.DISPONIBLE, EstadoArticulo.RESERVADO}
 
 
@@ -257,9 +258,15 @@ def vender(articulo: Articulo, usuario, cantidad: int = 1):
 
 
 @transaction.atomic
-def deshacer_ultima_venta(articulo: Articulo, usuario) -> None:
+def deshacer_ultima_venta(articulo: Articulo, usuario, venta_id: int | None = None) -> None:
+    """Deshace `venta_id` (el «Deshacer» del aviso) o, sin él, la última venta del artículo."""
     articulo = _bloquear(articulo)
-    venta = articulo.ventas.order_by("-fecha", "-id").first()
+    if venta_id is not None:
+        venta = articulo.ventas.filter(id=venta_id).first()
+        if venta is None:
+            raise Conflicto(VENTA_YA_DESHECHA)
+    else:
+        venta = articulo.ventas.order_by("-fecha", "-id").first()
     if venta is None:
         raise Conflicto(SIN_VENTAS)
     if articulo.tipo == TipoArticulo.AUTO:

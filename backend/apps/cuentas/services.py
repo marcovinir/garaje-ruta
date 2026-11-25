@@ -93,7 +93,7 @@ def establecer_contrasena(
 
 # --- Gestión de usuarios desde el panel ------------------------------------------------
 
-AUTO_DESACTIVAR = "No puedes desactivar tu propia cuenta."
+AUTO_DESACTIVAR = "No podés desactivar tu propia cuenta."
 ULTIMO_ADMIN = "Debe quedar al menos un administrador activo."
 YA_ACTIVADO = "Este usuario ya activó su cuenta."
 EMAIL_DUPLICADO = "Ya existe un usuario con ese correo."

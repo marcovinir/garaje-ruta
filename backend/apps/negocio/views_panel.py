@@ -10,7 +10,7 @@ from apps.cuentas.permisos import ARTICULOS_VER, CONFIGURACION_EDITAR
 from .models import ConfiguracionNegocio, HorarioAtencion
 from .views import configuracion_json
 
-WHATSAPP_INVALIDO = "Escribe el número con código de país, solo dígitos."
+WHATSAPP_INVALIDO = "Escribí el número con código de país, solo dígitos."
 
 
 class HorarioSerializer(serializers.Serializer):

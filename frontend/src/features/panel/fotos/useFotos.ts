@@ -10,6 +10,8 @@ import { ErrorFirma, type Firma, pedirFirma, subirFoto } from "./subir";
 
 export const MAX_FOTOS = 15;
 const EN_PARALELO = 3;
+// Cloudinary acepta firmas de hasta 1 h: se renueva antes, con margen.
+const VIGENCIA_FIRMA_S = 50 * 60;
 
 export type EstadoFoto = "pendiente" | "subiendo" | "lista" | "error";
 
@@ -52,6 +54,7 @@ export function useFotos(iniciales: FotoApi[], dependencias: Partial<Dependencia
   const itemsRef = useRef(items);
   const activas = useRef(0);
   const firma = useRef<Promise<Firma> | null>(null);
+  const cancelar = useRef(new Map<string, AbortController>());
   const [inicialesRef] = useState(() => JSON.stringify(iniciales));
 
   const actualizar = useCallback((cambio: (lista: ItemFoto[]) => ItemFoto[]) => {
@@ -65,14 +68,18 @@ export function useFotos(iniciales: FotoApi[], dependencias: Partial<Dependencia
   );
 
   const obtenerFirma = useCallback(
-    (renovar = false) => {
-      if (renovar || !firma.current) {
-        firma.current = deps.firmar();
-        firma.current.catch(() => {
-          firma.current = null;
-        });
+    async (renovar = false): Promise<Firma> => {
+      if (!renovar && firma.current) {
+        const actual = await firma.current.catch(() => null);
+        const edad = Date.now() / 1000 - (actual?.timestamp ?? 0);
+        if (actual && edad < VIGENCIA_FIRMA_S) return actual;
       }
-      return firma.current;
+      const nueva = deps.firmar();
+      firma.current = nueva;
+      nueva.catch(() => {
+        if (firma.current === nueva) firma.current = null;
+      });
+      return nueva;
     },
     [deps],
   );
@@ -84,25 +91,31 @@ export function useFotos(iniciales: FotoApi[], dependencias: Partial<Dependencia
       activas.current++;
       cambiarItem(siguiente.clave, { estado: "subiendo", progreso: 0, error: undefined });
       const { clave, archivo } = siguiente;
+      const control = new AbortController();
+      cancelar.current.set(clave, control);
       void (async () => {
         try {
           const { comprimir: comprimirFoto, subir } = deps;
           const { blob } = await comprimirFoto(archivo);
+          if (control.signal.aborted) return;
           const alProgreso = (progreso: number) => cambiarItem(clave, { progreso });
           let foto: FotoApi;
           try {
-            foto = await subir(blob, await obtenerFirma(), alProgreso);
+            foto = await subir(blob, await obtenerFirma(), alProgreso, control.signal);
           } catch (error) {
             if (!(error instanceof ErrorFirma)) throw error;
-            foto = await subir(blob, await obtenerFirma(true), alProgreso);
+            foto = await subir(blob, await obtenerFirma(true), alProgreso, control.signal);
           }
           cambiarItem(clave, { estado: "lista", progreso: 1, foto });
         } catch (error) {
+          // Quitada mientras subía: ya no está en la lista.
+          if (control.signal.aborted) return;
           cambiarItem(clave, {
             estado: "error",
             error: error instanceof ErrorFoto ? error.message : mensajeDe(error),
           });
         } finally {
+          cancelar.current.delete(clave);
           activas.current--;
           // Se llama por la ref: al terminar una subida sigue con la cola.
           seguir.current();
@@ -141,6 +154,8 @@ export function useFotos(iniciales: FotoApi[], dependencias: Partial<Dependencia
       actualizar((lista) => {
         const item = lista.find((i) => i.clave === clave);
         if (item?.vista) URL.revokeObjectURL?.(item.vista);
+        // Si se estaba subiendo, se corta: así no queda una foto huérfana en Cloudinary.
+        cancelar.current.get(clave)?.abort();
         return lista.filter((i) => i.clave !== clave);
       }),
     [actualizar],

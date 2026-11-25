@@ -41,13 +41,15 @@ async function abrirMas(card: HTMLElement) {
 describe("acciones rápidas", () => {
   it("«Vendí 1» descuenta y el aviso ofrece «Deshacer», que devuelve la cantidad", async () => {
     const usuario = userEvent.setup();
+    let cuerpoDeshacer: unknown;
     servidor.use(
       http.post("*/api/v1/panel/articulos/201/vender/", () =>
         HttpResponse.json({ venta_id: 9, articulo: conCantidad(1) }, { status: 201 }),
       ),
-      http.post("*/api/v1/panel/articulos/201/deshacer-venta/", () =>
-        HttpResponse.json(conCantidad(2)),
-      ),
+      http.post("*/api/v1/panel/articulos/201/deshacer-venta/", async ({ request }) => {
+        cuerpoDeshacer = await request.json();
+        return HttpResponse.json(conCantidad(2));
+      }),
     );
     renderPanel(<PaginaArticulos />);
     const card = await tarjeta("Pastillas de freno Corolla");
@@ -57,6 +59,8 @@ describe("acciones rápidas", () => {
     expect(screen.getByText("Vendido: Pastillas de freno Corolla")).toBeInTheDocument();
     await usuario.click(screen.getByRole("button", { name: "Deshacer" }));
     expect(await within(card).findByText("Quedan 2")).toBeInTheDocument();
+    // Deshace esa venta y no la última del artículo, que podría ser de otra persona.
+    expect(cuerpoDeshacer).toEqual({ venta_id: 9 });
   });
 
   it("si otra persona vendió el último (409), muestra el mensaje y la fila se actualiza (Review Focus 2)", async () => {
@@ -156,6 +160,38 @@ describe("acciones rápidas", () => {
     await waitFor(() => expect(deshecha).toBe(true));
   });
 
+  it("«Vendí varios…» valida la cantidad (1 al stock) y la reinicia a 1 al abrir", async () => {
+    const usuario = userEvent.setup();
+    let cuerpo: unknown;
+    servidor.use(
+      http.post("*/api/v1/panel/articulos/201/vender/", async ({ request }) => {
+        cuerpo = await request.json();
+        return HttpResponse.json({ venta_id: 5, articulo: conCantidad(0) }, { status: 201 });
+      }),
+    );
+    renderPanel(<PaginaArticulos />);
+    const card = await tarjeta("Pastillas de freno Corolla");
+    await abrirMas(card);
+    await usuario.click(within(card).getByRole("button", { name: "Vendí varios…" }));
+    let dialogo = await screen.findByRole("dialog");
+    const campo = within(dialogo).getByLabelText("Cantidad");
+    await usuario.clear(campo);
+    await usuario.type(campo, "5");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Registrar venta" }));
+    expect(within(dialogo).getByText("Entre 1 y 2.")).toBeInTheDocument();
+    expect(cuerpo).toBeUndefined();
+    await usuario.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
+    await abrirMas(card);
+    await usuario.click(within(card).getByRole("button", { name: "Vendí varios…" }));
+    dialogo = await screen.findByRole("dialog");
+    expect(within(dialogo).getByLabelText("Cantidad")).toHaveValue(1);
+    expect(within(dialogo).queryByText("Entre 1 y 2.")).not.toBeInTheDocument();
+    await usuario.clear(within(dialogo).getByLabelText("Cantidad"));
+    await usuario.type(within(dialogo).getByLabelText("Cantidad"), "2");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Registrar venta" }));
+    await waitFor(() => expect(cuerpo).toEqual({ cantidad: 2 }));
+  });
+
   it("eliminar pide confirmación; cancelar no llama a la API", async () => {
     const usuario = userEvent.setup();
     let borrado = false;
@@ -179,7 +215,7 @@ describe("acciones rápidas", () => {
     servidor.use(
       http.delete("*/api/v1/panel/articulos/101/", () =>
         HttpResponse.json(
-          { detalle: "Este artículo tiene ventas: ocúltalo en lugar de borrarlo." },
+          { detalle: "Este artículo tiene ventas: ocultalo en lugar de borrarlo." },
           { status: 409 },
         ),
       ),
@@ -190,7 +226,7 @@ describe("acciones rápidas", () => {
     await usuario.click(within(card).getByRole("button", { name: "Eliminar" }));
     const dialogo = screen.getByRole("dialog", { name: "¿Eliminar «Toyota Corolla 2015»?" });
     await usuario.click(within(dialogo).getByRole("button", { name: "Eliminar" }));
-    expect(await screen.findByText(/tiene ventas: ocúltalo/)).toBeInTheDocument();
+    expect(await screen.findByText(/tiene ventas: ocultalo/)).toBeInTheDocument();
   });
 
   it("duplicar abre el formulario de la copia", async () => {

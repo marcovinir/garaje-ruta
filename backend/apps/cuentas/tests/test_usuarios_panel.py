@@ -53,7 +53,7 @@ def test_no_puede_desactivarse_a_si_mismo(admin, yo):
     crear_admin("otro@x.test")
     r = admin.post(f"{URL}{yo.id}/desactivar/")
     assert r.status_code == 400
-    assert r.json()["detalle"] == "No puedes desactivar tu propia cuenta."
+    assert r.json()["detalle"] == "No podés desactivar tu propia cuenta."
 
 
 def test_admin_desactiva_a_otro_admin(admin):
@@ -138,7 +138,7 @@ def test_colaborador_no_puede_listar_usuarios(db):
 def test_demo_no_puede_crear_usuarios(db):
     r = crear(cliente_de(_usuario("demo", "d@x.test")))
     assert r.status_code == 403
-    assert r.json()["detalle"].startswith("No tienes permiso")
+    assert r.json()["detalle"].startswith("No tenés permiso")
 
 
 def test_busqueda_q_por_correo_y_filtros(admin):

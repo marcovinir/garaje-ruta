@@ -77,6 +77,7 @@ export function subirFoto(
     };
     xhr.onerror = () =>
       rechazar(new ErrorFoto("No se pudo subir. Revisá la conexión y reintentá."));
+    xhr.onabort = () => rechazar(new DOMException("Subida cancelada.", "AbortError"));
     senal?.addEventListener("abort", () => xhr.abort());
     const formulario = new FormData();
     formulario.append("file", blob);

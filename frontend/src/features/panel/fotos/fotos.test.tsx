@@ -151,6 +151,54 @@ describe("editor de fotos", () => {
     expect(c.pendientes).toHaveLength(0);
   });
 
+  it("una firma con más de 50 minutos se renueva antes de la siguiente subida", async () => {
+    const c = dependenciasControladas();
+    const ahora = Math.floor(Date.now() / 1000);
+    const pedidas: number[] = [];
+    const usadas: number[] = [];
+    const firmar = async () => {
+      // La primera ya tiene 55 minutos; la segunda es nueva.
+      const timestamp = pedidas.length === 0 ? ahora - 55 * 60 : ahora;
+      pedidas.push(timestamp);
+      return { cloud_name: "garaje", api_key: "1", timestamp, folder: "f", signature: "s" };
+    };
+    const subir: DependenciasFotos["subir"] = (blob, firma, alProgreso, senal) => {
+      usadas.push(firma.timestamp);
+      return c.deps.subir(blob, firma, alProgreso, senal);
+    };
+    renderPanel(<Prueba deps={{ ...c.deps, firmar, subir }} />);
+    await elegir(1);
+    await waitFor(() => expect(c.pendientes).toHaveLength(1));
+    await act(async () => c.pendientes[0].resolver(foto(1)));
+    await elegir(1);
+    await waitFor(() => expect(c.pendientes).toHaveLength(2));
+    expect(pedidas).toHaveLength(2);
+    expect(usadas[1]).toBe(ahora);
+  });
+
+  it("quitar una foto que se está subiendo cancela la subida y la cola sigue", async () => {
+    const c = dependenciasControladas();
+    const senales: (AbortSignal | undefined)[] = [];
+    const subir: DependenciasFotos["subir"] = (blob, firma, alProgreso, senal) => {
+      senales.push(senal);
+      const promesa = c.deps.subir(blob, firma, alProgreso, senal);
+      const indice = c.pendientes.length - 1;
+      senal?.addEventListener("abort", () =>
+        c.pendientes[indice].rechazar(new DOMException("cancelada", "AbortError")),
+      );
+      return promesa;
+    };
+    renderPanel(<Prueba deps={{ ...c.deps, subir }} />);
+    await elegir(1);
+    await waitFor(() => expect(c.pendientes).toHaveLength(1));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Quitar la foto 1" }));
+    expect(senales[0]?.aborted).toBe(true);
+    await waitFor(() => expect(screen.getByLabelText("ocupado")).toHaveTextContent("false"));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await elegir(1);
+    await waitFor(() => expect(c.pendientes).toHaveLength(2));
+  });
+
   it("«Hacer principal» la pone primera y «Mover después» cambia el orden", async () => {
     const u = userEvent.setup();
     renderPanel(

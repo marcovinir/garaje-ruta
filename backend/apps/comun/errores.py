@@ -6,7 +6,7 @@ from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
-MENSAJE_VALIDACION = "Revisa los datos marcados."
+MENSAJE_VALIDACION = "Revisá los datos marcados."
 CORREO_CAIDO = "No pudimos enviar el correo. Probá de nuevo en unos minutos."
 
 logger = logging.getLogger(__name__)

@@ -17,4 +17,4 @@ def test_recuperacion_lleva_boton_y_aviso():
     html = correos.html_recuperacion("Laura", ENLACE)
     assert "RESTABLECER CONTRASEÑA" in html
     assert f'href="{ENLACE}"' in html
-    assert "Si no lo pediste, ignora este correo" in html
+    assert "Si no lo pediste, ignorá este correo" in html

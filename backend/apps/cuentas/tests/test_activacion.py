@@ -41,7 +41,7 @@ def test_activacion_envia_correo_con_enlace(nuevo, settings):
     enviar_enlace_activacion(nuevo)
     (envio,) = NotificadorMemoria.enviados
     assert envio["destinatario"] == "dra.lopez@x.test"
-    assert envio["asunto"] == "Activa tu cuenta en Garaje Ruta"
+    assert envio["asunto"] == "Activá tu cuenta en Garaje Ruta"
     assert "http://localhost:3000/panel/activar/" in envio["texto"]
 
 
@@ -109,7 +109,7 @@ def test_restablecer_cambia_contrasena(cliente, db):
     r = cliente.post("/api/v1/auth/recuperar/", {"email": " ADMIN@x.test "}, format="json")
     assert r.status_code == 204
     (envio,) = NotificadorMemoria.enviados
-    assert envio["asunto"] == "Restablece tu contraseña"
+    assert envio["asunto"] == "Restablecé tu contraseña"
     datos = uid_y_token(envio["texto"], "restablecer")
     r = cliente.post("/api/v1/auth/restablecer/", {**datos, "password": CLAVE_NUEVA}, format="json")
     assert r.status_code == 204

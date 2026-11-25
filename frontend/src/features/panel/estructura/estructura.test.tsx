@@ -49,6 +49,16 @@ describe("marco del panel", () => {
     );
   });
 
+  it("«Más» solo apunta con aria-controls a su lista cuando está abierta", async () => {
+    renderPanel(conMarco());
+    const inferior = await screen.findByRole("navigation", { name: "Navegación del celular" });
+    const mas = within(inferior).getByRole("button", { name: /Más/ });
+    expect(mas).not.toHaveAttribute("aria-controls");
+    await userEvent.setup().click(mas);
+    expect(mas).toHaveAttribute("aria-controls", "menu-mas");
+    expect(document.getElementById("menu-mas")).toBeInTheDocument();
+  });
+
   it("el demo no tiene «Nuevo» en la navegación inferior", async () => {
     renderPanel(conMarco(), { usuario: "demo" });
     const inferior = await screen.findByRole("navigation", { name: "Navegación del celular" });
