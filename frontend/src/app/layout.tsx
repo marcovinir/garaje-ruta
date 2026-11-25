@@ -27,7 +27,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${titulos.variable} ${texto.variable} h-full antialiased`}>
+    // suppressHydrationWarning: el script del modo oscuro del panel (#113) pone data-tema en <html>
+    // antes de hidratar. Solo silencia los atributos de este elemento, no los de sus hijos.
+    <html
+      lang="es"
+      className={`${titulos.variable} ${texto.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <body className="bg-fondo text-tinta flex min-h-full flex-col">{children}</body>
     </html>
   );

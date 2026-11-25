@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
+import { StrictMode } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -87,6 +88,18 @@ describe("tema del panel", () => {
       throw new Error("bloqueado");
     });
     expect(() => new Function(SCRIPT_TEMA)()).not.toThrow();
+    expect(document.documentElement.dataset.tema).toBe("oscuro");
+  });
+
+  it("con el modo estricto de React (montar, desmontar, montar) el modo se mantiene", () => {
+    sistema(false);
+    localStorage.setItem(CLAVE_TEMA, "oscuro");
+    document.documentElement.dataset.tema = "oscuro";
+    render(
+      <StrictMode>
+        <TemaPanel />
+      </StrictMode>,
+    );
     expect(document.documentElement.dataset.tema).toBe("oscuro");
   });
 
