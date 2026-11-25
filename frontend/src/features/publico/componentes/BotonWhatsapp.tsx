@@ -1,11 +1,9 @@
 import { enlaceWhatsapp } from "@/shared/lib/whatsapp";
 
-type Props = {
-  numero: string;
-  titulo: string;
-  url: string;
+type Props = ({ enlace: string } | { numero: string; titulo: string; url: string }) & {
   texto?: string;
   className?: string;
+  secundario?: boolean;
 };
 
 /** Ícono de WhatsApp (Simple Icons, CC0), relleno con el color del texto. */
@@ -17,19 +15,19 @@ export function IconoWhatsapp({ tamano = 20 }: { tamano?: number }) {
   );
 }
 
-export function BotonWhatsapp({
-  numero,
-  titulo,
-  url,
-  texto = "Consultar por WhatsApp",
-  className = "",
-}: Props) {
+export function BotonWhatsapp(props: Props) {
+  const { texto = "Consultar por WhatsApp", className = "", secundario = false } = props;
+  const enlace =
+    "enlace" in props ? props.enlace : enlaceWhatsapp(props.numero, props.titulo, props.url);
+  const colores = secundario
+    ? "border-whatsapp-fuerte text-whatsapp-fuerte hover:bg-whatsapp-fuerte hover:text-white border"
+    : "bg-whatsapp-fuerte hover:bg-whatsapp-fuerte-hover text-white";
   return (
     <a
-      href={enlaceWhatsapp(numero, titulo, url)}
+      href={enlace}
       target="_blank"
       rel="noopener noreferrer"
-      className={`bg-whatsapp-fuerte hover:bg-whatsapp-fuerte-hover flex min-h-13 items-center justify-center gap-2.5 rounded-xl px-5 font-bold text-white ${className}`}
+      className={`${colores} flex min-h-13 items-center justify-center gap-2.5 rounded-xl px-5 font-bold ${className}`}
     >
       <IconoWhatsapp />
       {texto}

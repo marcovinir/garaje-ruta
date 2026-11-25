@@ -13,7 +13,8 @@ import { colones, dolares, miles } from "@/shared/lib/dinero";
 import { urlAbsoluta } from "@/shared/lib/rutas";
 import { enlaceWhatsappGeneral } from "@/shared/lib/whatsapp";
 
-import { BotonWhatsapp, IconoWhatsapp } from "../componentes/BotonWhatsapp";
+import { IconoWhatsapp } from "../componentes/BotonWhatsapp";
+import { BotonesWhatsappFicha } from "../componentes/BotonesWhatsappFicha";
 import { Esqueleto } from "../componentes/Esqueleto";
 import { EtiquetaEstado } from "../componentes/EtiquetaEstado";
 import { MensajeError } from "../componentes/MensajeError";
@@ -87,7 +88,7 @@ function NoDisponible({
               href={enlaceWhatsappGeneral(whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-rojo hover:bg-rojo-fuerte inline-flex min-h-11 items-center gap-2 rounded-xl px-5 font-semibold text-white"
+              className="bg-whatsapp-fuerte hover:bg-whatsapp-fuerte-hover inline-flex min-h-11 items-center gap-2 rounded-xl px-5 font-semibold text-white"
             >
               <IconoWhatsapp />
               Escribinos por WhatsApp
@@ -112,6 +113,40 @@ function resumen(f: FichaCompleta): string {
     }`;
   }
   return "";
+}
+
+function ContactoFicha({
+  ficha,
+  numero,
+  compacto = false,
+}: {
+  ficha: FichaCompleta;
+  numero: string;
+  compacto?: boolean;
+}) {
+  const comun = { precio: ficha.precio_colones, url: urlAbsoluta(ficha.ruta) };
+  if (ficha.auto)
+    return (
+      <BotonesWhatsappFicha
+        numero={numero}
+        tipo="auto"
+        datos={{
+          ...comun,
+          marca: ficha.auto.marca,
+          modelo: ficha.auto.modelo,
+          anio: ficha.auto.anio,
+        }}
+        compacto={compacto}
+      />
+    );
+  return (
+    <BotonesWhatsappFicha
+      numero={numero}
+      tipo="repuesto"
+      datos={{ ...comun, nombre: ficha.titulo, numeroParte: ficha.repuesto?.numero_parte }}
+      compacto={compacto}
+    />
+  );
 }
 
 function Completa({
@@ -174,8 +209,8 @@ function Completa({
               tamano="ficha"
             />
             {whatsapp ? (
-              <div className="hidden lg:block">
-                <BotonWhatsapp numero={whatsapp} titulo={ficha.titulo} url={url} />
+              <div>
+                <ContactoFicha ficha={ficha} numero={whatsapp} />
               </div>
             ) : null}
             <Compartir titulo={ficha.titulo} url={url} />
@@ -210,13 +245,7 @@ function Completa({
                 <span className="text-tinta-suave text-xs">{dolares(ficha.precio_usd)}</span>
               ) : null}
             </div>
-            <BotonWhatsapp
-              numero={whatsapp}
-              titulo={ficha.titulo}
-              url={url}
-              texto="Consultar"
-              className="flex-1"
-            />
+            <ContactoFicha ficha={ficha} numero={whatsapp} compacto />
           </div>
         </div>
       ) : null}
