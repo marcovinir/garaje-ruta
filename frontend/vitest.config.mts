@@ -12,5 +12,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
+    // Las pruebas de e2e/ son de Playwright (npm run e2e).
+    exclude: ["e2e/**", "node_modules/**"],
   },
 });
