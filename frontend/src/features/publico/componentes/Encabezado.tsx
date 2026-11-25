@@ -27,7 +27,7 @@ function Buscador({ id }: { id: string }) {
       />
       <button
         type="submit"
-        className="bg-rojo hover:bg-rojo-oscuro min-h-11 rounded-lg px-4 font-semibold text-white"
+        className="bg-rojo hover:bg-rojo-fuerte min-h-11 rounded-lg px-4 font-semibold text-white"
       >
         Buscar
       </button>

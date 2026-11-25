@@ -87,7 +87,7 @@ function NoDisponible({
               href={enlaceWhatsappGeneral(whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-rojo hover:bg-rojo-oscuro inline-flex min-h-11 items-center gap-2 rounded-xl px-5 font-semibold text-white"
+              className="bg-rojo hover:bg-rojo-fuerte inline-flex min-h-11 items-center gap-2 rounded-xl px-5 font-semibold text-white"
             >
               <IconoWhatsapp />
               Escribinos por WhatsApp

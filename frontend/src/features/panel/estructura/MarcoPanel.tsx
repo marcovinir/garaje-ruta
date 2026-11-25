@@ -6,6 +6,7 @@ import { type ReactNode, useState } from "react";
 
 import { type Yo, useLogout } from "../auth/api";
 import { rutaPanel } from "../rutaPanel";
+import { InterruptorTema } from "../ui/InterruptorTema";
 import { ICONO_MAS, ICONO_NUEVO, ICONO_SALIR, SECCIONES, type Seccion } from "./secciones";
 
 function Icono({ trazo }: { trazo: string }) {
@@ -64,11 +65,18 @@ export function MarcoPanel({ yo, children }: { yo: Yo; children: ReactNode }) {
         }`}
       >
         <div className="flex items-center justify-between gap-2 px-1 py-2">
+          {/* Logo normal y, en modo oscuro, el de «GARAJE» en blanco. */}
           {/* eslint-disable-next-line @next/next/no-img-element -- SVG local */}
           <img
             src={plegado ? "/marca/logo-simbolo.svg" : "/marca/logo-completo.svg"}
             alt="Garaje Ruta"
-            className="h-9 w-auto"
+            className="oscuro:hidden h-9 w-auto"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element -- SVG local */}
+          <img
+            src={plegado ? "/marca/logo-simbolo-oscuro.svg" : "/marca/logo-completo-oscuro.svg"}
+            alt=""
+            className="oscuro:block hidden h-9 w-auto"
           />
           <button
             type="button"
@@ -107,6 +115,7 @@ export function MarcoPanel({ yo, children }: { yo: Yo; children: ReactNode }) {
           >
             {yo.nombre} · {yo.rol}
           </p>
+          <InterruptorTema claseTexto={plegado ? "md:sr-only lg:not-sr-only" : ""} />
           {salir}
         </div>
       </aside>
@@ -115,8 +124,21 @@ export function MarcoPanel({ yo, children }: { yo: Yo; children: ReactNode }) {
         {/* Barra superior del celular. */}
         <header className="bg-tarjeta border-borde sticky top-0 z-20 flex items-center justify-between border-b px-4 py-2 md:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element -- SVG local */}
-          <img src="/marca/logo-completo.svg" alt="Garaje Ruta" className="h-9 w-auto" />
-          <span className="text-tinta-suave text-sm">{yo.nombre}</span>
+          <img
+            src="/marca/logo-completo.svg"
+            alt="Garaje Ruta"
+            className="oscuro:hidden h-9 w-auto"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element -- SVG local */}
+          <img
+            src="/marca/logo-completo-oscuro.svg"
+            alt=""
+            className="oscuro:block hidden h-9 w-auto"
+          />
+          <div className="flex items-center gap-1">
+            <span className="text-tinta-suave text-sm">{yo.nombre}</span>
+            <InterruptorTema compacto />
+          </div>
         </header>
         <main
           id="contenido"

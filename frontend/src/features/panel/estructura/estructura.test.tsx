@@ -59,6 +59,31 @@ describe("marco del panel", () => {
     expect(document.getElementById("menu-mas")).toBeInTheDocument();
   });
 
+  it("el interruptor de la barra lateral cambia a modo oscuro y su nombre cambia", async () => {
+    delete document.documentElement.dataset.tema;
+    renderPanel(conMarco());
+    const lateral = await screen.findByRole("navigation", { name: "Panel" });
+    const barra = lateral.closest("aside")!;
+    await userEvent
+      .setup()
+      .click(within(barra).getByRole("button", { name: "Cambiar a modo oscuro" }));
+    expect(document.documentElement.dataset.tema).toBe("oscuro");
+    expect(
+      await within(barra).findByRole("button", { name: "Cambiar a modo claro" }),
+    ).toBeInTheDocument();
+    delete document.documentElement.dataset.tema;
+  });
+
+  it("la barra superior del celular también tiene el interruptor", async () => {
+    delete document.documentElement.dataset.tema;
+    renderPanel(conMarco());
+    await screen.findByRole("navigation", { name: "Navegación del celular" });
+    const superior = document.querySelector("header")!;
+    expect(
+      within(superior).getByRole("button", { name: "Cambiar a modo oscuro" }),
+    ).toBeInTheDocument();
+  });
+
   it("el demo no tiene «Nuevo» en la navegación inferior", async () => {
     renderPanel(conMarco(), { usuario: "demo" });
     const inferior = await screen.findByRole("navigation", { name: "Navegación del celular" });
@@ -98,6 +123,15 @@ describe("permisos", () => {
 });
 
 describe("Dialogo", () => {
+  it("el diálogo va centrado (Tailwind le quita el margin: auto del navegador)", () => {
+    renderPanel(
+      <Dialogo abierto={false} titulo="¿Seguro?" alConfirmar={() => {}} alCerrar={() => {}}>
+        Texto
+      </Dialogo>,
+    );
+    expect(screen.getByRole("dialog", { hidden: true })).toHaveClass("m-auto");
+  });
+
   it("confirma o cancela", async () => {
     HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
       this.setAttribute("open", "");

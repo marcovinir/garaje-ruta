@@ -6,13 +6,16 @@
   --color-tarjeta: #ffffff;
   --color-borde: #deded9;
   --color-campo: #eeeeeb;
-  /* Contorno de campos de formulario: 3:1 sobre blanco (WCAG 1.4.11). */
-  --color-borde-campo: #8a8b86;
+  /* Contorno de campos: 3:1 sobre blanco y sobre el fondo del campo (WCAG 1.4.11). */
+  --color-borde-campo: #868782;
   --color-tinta: #151517;
   --color-tinta-suave: #55565b;
   --color-carbon: #1c1c1e;
   --color-rojo: #e11d2e;
+  /* Rojo para texto sobre fondo claro (errores, «Eliminar»); en oscuro se aclara. */
   --color-rojo-oscuro: #b3141f;
+  /* Fondo rojo con texto blanco (botón de peligro, hover del principal): igual en los dos modos. */
+  --color-rojo-fuerte: #b3141f;
   --color-rojo-suave: #fdecee;
 
   --color-disponible: #dcf5e7;
@@ -26,6 +29,32 @@
 
   --font-titulos: var(--fuente-titulos), "Arial Narrow", sans-serif;
   --font-texto: var(--fuente-texto), system-ui, sans-serif;
+}
+
+/* Modo oscuro del panel (#113): `data-tema="oscuro"` en <html>, lo pone el script del layout del
+   panel. Contraste comprobado en src/app/contraste.test.ts. La web pública no lo usa. */
+@custom-variant oscuro (&:where([data-tema="oscuro"], [data-tema="oscuro"] *));
+
+[data-tema="oscuro"] {
+  color-scheme: dark;
+  --color-fondo: #141416;
+  --color-tarjeta: #1f2023;
+  --color-borde: #34353a;
+  --color-campo: #2a2b2f;
+  --color-borde-campo: #85868c;
+  --color-tinta: #f2f2f0;
+  --color-tinta-suave: #b4b5ba;
+  --color-carbon: #3a3b40;
+  --color-rojo-oscuro: #ff8f98;
+  --color-rojo-suave: #3d1519;
+  --color-disponible: #12301f;
+  --color-disponible-tinta: #7ee0a8;
+  --color-reservado: #13263f;
+  --color-reservado-tinta: #9cc6f5;
+  --color-vendido: #2c2d31;
+  --color-vendido-tinta: #d4d5da;
+  --color-agotado: #3a1d12;
+  --color-agotado-tinta: #f5a37c;
 }
 
 html {
@@ -73,6 +102,12 @@ html {
   padding: 0 0 env(safe-area-inset-bottom);
   border-radius: 1.25rem 1.25rem 0 0;
   overscroll-behavior: contain;
+}
+
+/* Diálogos del panel: lo de atrás se oscurece para que el diálogo se separe, también en el modo
+   oscuro, donde la tarjeta del diálogo y las de atrás tienen el mismo color. */
+.dialogo-panel::backdrop {
+  background: rgb(0 0 0 / 0.6);
 }
 
 .hoja-filtros::backdrop {

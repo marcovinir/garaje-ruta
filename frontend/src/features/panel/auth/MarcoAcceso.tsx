@@ -11,7 +11,15 @@ export function MarcoAcceso({ titulo, children }: { titulo: string; children: Re
           alt="Garaje Ruta"
           width={180}
           height={48}
-          className="h-12 w-auto self-start"
+          className="oscuro:hidden h-12 w-auto self-start"
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element -- SVG local, sin optimizar */}
+        <img
+          src="/marca/logo-completo-oscuro.svg"
+          alt=""
+          width={180}
+          height={48}
+          className="oscuro:block hidden h-12 w-auto self-start"
         />
         <h1 className="titulo text-3xl">{titulo}</h1>
         {children}
