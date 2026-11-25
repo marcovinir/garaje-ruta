@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+import type { FichaCompleta } from "../src/shared/api/tipos";
+import { colones } from "../src/shared/lib/dinero";
+
 import { autosDisponibles } from "./ayudas";
 
 /** HU-02 y HU-03: la ficha trae Open Graph y lleva a WhatsApp con el enlace. Solo lee datos. */
@@ -21,8 +24,18 @@ test("la ficha tiene Open Graph, canónica y botón de WhatsApp", async ({ page,
   const whatsapp = page.getByRole("link", { name: /Consultar/ }).first();
   const href = (await whatsapp.getAttribute("href")) ?? "";
   expect(href).toMatch(/^https:\/\/wa\.me\/\d+\?text=/);
-  expect(decodeURIComponent(href)).toContain(auto.titulo);
-  expect(decodeURIComponent(href)).toContain(auto.ruta);
+  const respuesta = await request.get(`/api/v1/articulos/${auto.id}/`);
+  expect(respuesta.ok()).toBeTruthy();
+  const ficha: FichaCompleta = await respuesta.json();
+  const datos = ficha.auto!;
+  const modelo = datos.modelo.startsWith(datos.marca + " ")
+    ? datos.modelo
+    : `${datos.marca} ${datos.modelo}`;
+  const mensaje = new URL(href).searchParams.get("text");
+  expect(mensaje).toBe(
+    `Hola, estoy interesado en el ${modelo} ${datos.anio} publicado en ${colones(ficha.precio_colones)}. ¿Todavía está disponible?\n${new URL(auto.ruta, page.url()).href}`,
+  );
+  await expect(page.getByRole("link", { name: "Agendar una visita", exact: true })).toBeVisible();
 });
 
 test("una URL con el texto viejo redirige con 308 a la canónica", async ({ request }) => {

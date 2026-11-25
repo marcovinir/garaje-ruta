@@ -242,4 +242,39 @@ describe("PaginaFicha", () => {
     ).toBeVisible();
     expect(screen.queryByText(/Corolla/)).not.toBeInTheDocument();
   });
+  it("usa los datos del auto en ambas consultas y ofrece visita", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue(ficha);
+    render(await PaginaFicha({ seccion: "autos", slug: "toyota-corolla-2015-se-12" }));
+    for (const enlace of screen.getAllByRole("link", { name: /^Consultar/ })) {
+      const mensaje = new URL(enlace.getAttribute("href")!).searchParams.get("text");
+      expect(mensaje).toContain("Toyota Corolla 2015 publicado en ₡6 500 000");
+      expect(mensaje).toContain(ficha.ruta);
+    }
+    expect(screen.getByRole("link", { name: "Agendar una visita" })).toBeInTheDocument();
+  });
+  it("usa disponibilidad y compatibilidad en la ficha de repuesto", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue({
+      ...ficha,
+      tipo: "repuesto",
+      titulo: "Faro",
+      ruta: "/repuestos/faro-12",
+      auto: null,
+      repuesto: {
+        condicion: "usado",
+        categoria: { nombre: "Faros", padre: null },
+        cantidad: 2,
+        numero_parte: "ABC",
+        compatibilidades: [],
+      },
+    });
+    render(await PaginaFicha({ seccion: "repuestos", slug: "faro-12" }));
+    const consulta = screen.getByRole("link", { name: "Consultar por WhatsApp" });
+    expect(new URL(consulta.getAttribute("href")!).searchParams.get("text")).toContain(
+      "Quisiera conocer su disponibilidad.",
+    );
+    const compatibilidad = screen.getByRole("link", { name: "Confirmar compatibilidad" });
+    expect(new URL(compatibilidad.getAttribute("href")!).searchParams.get("text")).toContain(
+      "Número de parte: ABC",
+    );
+  });
 });
