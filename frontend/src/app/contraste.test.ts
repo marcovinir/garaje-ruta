@@ -51,6 +51,10 @@ const PARES: [string, string, number][] = [
   ["reservado-tinta", "reservado", 4.5],
   ["vendido-tinta", "vendido", 4.5],
   ["agotado-tinta", "agotado", 4.5],
+  // WhatsApp (#115): botones con texto blanco y el ícono carbón del botón flotante.
+  ["blanco", "whatsapp-fuerte", 4.5],
+  ["blanco", "whatsapp-fuerte-hover", 4.5],
+  ["carbon", "whatsapp", 3],
   ["borde-campo", "campo", 3],
   ["borde-campo", "tarjeta", 3],
 ];

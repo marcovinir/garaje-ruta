@@ -3,6 +3,8 @@ import Image from "next/image";
 import type { Configuracion } from "@/shared/api/tipos";
 import { enlaceWhatsappGeneral } from "@/shared/lib/whatsapp";
 
+import { IconoWhatsapp } from "./BotonWhatsapp";
+
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 /** Agrupa días seguidos con el mismo horario: «Lunes a viernes · 08:00 a 17:00». */
@@ -45,8 +47,9 @@ export function PieDePagina({ configuracion }: { configuracion: Configuracion | 
               href={enlaceWhatsappGeneral(configuracion.whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-rojo hover:bg-rojo-fuerte inline-flex min-h-11 items-center self-start rounded-xl px-4 font-semibold text-white"
+              className="bg-whatsapp-fuerte hover:bg-whatsapp-fuerte-hover inline-flex min-h-11 items-center gap-2 self-start rounded-xl px-4 font-semibold text-white"
             >
+              <IconoWhatsapp />
               Escribinos por WhatsApp
             </a>
           ) : null}
