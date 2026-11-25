@@ -47,7 +47,7 @@ export function Dialogo({
       ref={ref}
       aria-labelledby={idTitulo}
       onClose={() => abierto && alCerrar()}
-      className="dialogo-panel bg-tarjeta text-tinta w-[min(32rem,calc(100%-2rem))] rounded-2xl p-0"
+      className="dialogo-panel bg-tarjeta text-tinta border-borde m-auto w-[min(32rem,calc(100%-2rem))] rounded-2xl border p-0"
     >
       <div className="flex flex-col gap-4 p-5">
         <h2 id={idTitulo} className="titulo text-2xl">

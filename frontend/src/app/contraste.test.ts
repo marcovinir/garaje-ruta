@@ -72,3 +72,11 @@ describe("contraste de la paleta", () => {
     expect(fallos).toEqual([]);
   });
 });
+
+describe("diálogos del panel", () => {
+  it("oscurecen lo que queda detrás, para que el diálogo se separe del fondo en los dos modos", () => {
+    const regla = css.match(/\.dialogo-panel::backdrop\s*\{([^}]*)\}/)?.[1] ?? "";
+    const alfa = Number(regla.match(/\/\s*([\d.]+)\s*\)/)?.[1] ?? 0);
+    expect(alfa).toBeGreaterThanOrEqual(0.5);
+  });
+});

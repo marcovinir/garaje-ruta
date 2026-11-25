@@ -104,6 +104,12 @@ html {
   overscroll-behavior: contain;
 }
 
+/* Diálogos del panel: lo de atrás se oscurece para que el diálogo se separe, también en el modo
+   oscuro, donde la tarjeta del diálogo y las de atrás tienen el mismo color. */
+.dialogo-panel::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
 .hoja-filtros::backdrop {
   background: rgb(21 21 23 / 0.5);
   overflow: hidden;

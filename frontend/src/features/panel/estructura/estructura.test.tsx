@@ -123,6 +123,15 @@ describe("permisos", () => {
 });
 
 describe("Dialogo", () => {
+  it("el diálogo va centrado (Tailwind le quita el margin: auto del navegador)", () => {
+    renderPanel(
+      <Dialogo abierto={false} titulo="¿Seguro?" alConfirmar={() => {}} alCerrar={() => {}}>
+        Texto
+      </Dialogo>,
+    );
+    expect(screen.getByRole("dialog", { hidden: true })).toHaveClass("m-auto");
+  });
+
   it("confirma o cancela", async () => {
     HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
       this.setAttribute("open", "");
