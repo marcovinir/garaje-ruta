@@ -1,0 +1,51 @@
+name: Respaldo semanal
+
+# Domingos a las 4:00 de Costa Rica (10:00 UTC): pg_dump de producción como artefacto (30 días),
+# además del respaldo diario de Supabase. Cómo restaurarlo: docs/respaldo.md.
+on:
+  schedule:
+    - cron: "0 10 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: base-de-produccion
+  cancel-in-progress: false
+
+jobs:
+  respaldar:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL_MIGRACIONES }}
+    steps:
+      - name: ¿Hay base de producción?
+        id: base
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Sin base de producción todavía: no se hace nada."
+            echo "lista=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "lista=true" >> "$GITHUB_OUTPUT"
+          fi
+      # Cliente de PostgreSQL 18 (PGDG): un pg_dump más nuevo que el servidor sí puede respaldarlo.
+      - if: steps.base.outputs.lista == 'true'
+        name: Instalar pg_dump 18
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc             https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main"             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-18
+      - if: steps.base.outputs.lista == 'true'
+        name: pg_dump
+        run: |
+          archivo="respaldo-$(date -u +%F).dump"
+          /usr/lib/postgresql/18/bin/pg_dump --format=custom --no-owner --no-privileges             --dbname="$DATABASE_URL" --file="$archivo"
+          echo "ARCHIVO=$archivo" >> "$GITHUB_ENV"
+          ls -l "$archivo"
+      - if: steps.base.outputs.lista == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: ${{ env.ARCHIVO }}
+          retention-days: 30
+          if-no-files-found: error

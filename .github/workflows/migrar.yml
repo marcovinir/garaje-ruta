@@ -1,0 +1,57 @@
+name: Migrar producción
+
+# Se lanza a mano después de un cambio de modelos (o la primera vez, con datos de ejemplo).
+# Usa el pooler de Supabase en modo sesión (puerto 5432): las migraciones no deben ir por el
+# modo transacción. createcachetable crea la tabla de la caché de los límites de peticiones
+# (sin ella, el login responde 500).
+on:
+  workflow_dispatch:
+    inputs:
+      sembrar:
+        description: "Regenerar los datos de ejemplo (borra los actuales)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: base-de-produccion
+  cancel-in-progress: false
+
+jobs:
+  migrar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.produccion
+      DATABASE_URL: ${{ secrets.DATABASE_URL_MIGRACIONES }}
+      SEMILLA_PASSWORD: ${{ secrets.SEMILLA_PASSWORD }}
+      SEMILLA_PASSWORD_DEMO: ${{ secrets.SEMILLA_PASSWORD_DEMO }}
+      # El mismo de Vercel: al terminar se avisa a Next para que muestre los datos nuevos.
+      REVALIDACION_SECRETO: ${{ secrets.REVALIDACION_SECRETO }}
+      FRONTEND_URL: https://garajeruta.marcovinir.dev
+      # Obligatorias en producción pero sin efecto en estos comandos.
+      SECRET_KEY: solo-para-comandos-de-gestion
+      ALLOWED_HOSTS: localhost
+      CSRF_TRUSTED_ORIGINS: https://garajeruta.marcovinir.dev
+      PANEL_RUTA: /panel
+      EMAIL_HOST_PASSWORD: sin-efecto-en-estos-comandos
+      DEFAULT_FROM_EMAIL: Garaje Ruta <garaje@marcovinir.dev>
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: python manage.py migrate --noinput
+      - run: python manage.py createcachetable
+      - if: ${{ inputs.sembrar }}
+        run: python manage.py sembrar --reiniciar
+      - if: ${{ inputs.sembrar }}
+        run: python manage.py actualizar_tipo_cambio
+      - name: Avisar a Next que los datos cambiaron
+        if: ${{ always() && env.REVALIDACION_SECRETO != '' }}
+        run: |
+          curl -sS --fail-with-body -X POST "$FRONTEND_URL/api/revalidar"             -H "Authorization: Bearer $REVALIDACION_SECRETO"             -H "Content-Type: application/json"             -d '{"etiquetas": ["articulos", "catalogos", "configuracion"]}'             || echo "::warning::No se pudo avisar a Next; se pondrá al día con su caché."
