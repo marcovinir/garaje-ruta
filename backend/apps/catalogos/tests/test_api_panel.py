@@ -91,3 +91,26 @@ def test_catalogos_fijos_solo_admin(admin, colaborador):
 
 def test_listar_catalogo_con_articulos_ver(colaborador):
     assert colaborador.get(f"{P}combustibles/").status_code == 200
+
+
+def test_renombrar_conserva_el_slug(admin):
+    """Las URL de filtros ya compartidas (?marca=great-wall) siguen funcionando."""
+    marca = Marca.objects.create(nombre="Great Wall", slug="great-wall")
+    r = admin.patch(f"{P}marcas/{marca.id}/", {"nombre": "Great Wall Motors"}, format="json")
+    assert r.status_code == 200, r.json()
+    assert r.json()["slug"] == "great-wall"
+    m = modelo()
+    r = admin.patch(f"{P}modelos/{m.id}/", {"nombre": "Otro nombre"}, format="json")
+    assert r.status_code == 200, r.json()
+    assert r.json()["slug"] == m.slug
+
+
+def test_nombre_distinto_con_el_mismo_slug_400(admin):
+    """«Toyota!» genera el slug «toyota», que ya existe: 400 y no un 500."""
+    Marca.objects.create(nombre="Toyota", slug="toyota")
+    r = admin.post(f"{P}marcas/", {"nombre": "Toyota!"}, format="json")
+    assert r.status_code == 400, r.json()
+    assert r.json()["campos"]["nombre"] == ["Ya existe."]
+    m = modelo()
+    r = admin.post(f"{P}modelos/", {"marca": m.marca_id, "nombre": m.nombre + "!"}, format="json")
+    assert r.status_code == 400, r.json()

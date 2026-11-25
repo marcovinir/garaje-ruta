@@ -121,6 +121,49 @@ def test_anio_futuro_rechazado(admin):
     ]
 
 
+@pytest.mark.parametrize(
+    "cambio",
+    [
+        {"precio_colones": 10**12},
+        {"precio_anterior_colones": 10**12},
+        {"auto": {"kilometraje": 10**12}},
+        {"auto": {"cilindrada_cc": 10**12}},
+        {"auto": {"puertas": 40_000}},
+        {"auto": {"pasajeros": 40_000}},
+        {"auto": {"bolsas_aire": 40_000}},
+    ],
+)
+def test_numeros_enormes_dan_400_y_no_500(admin, cambio):
+    datos = datos_auto(**cambio.pop("auto", {}))
+    datos.update(cambio)
+    r = admin.post(URL, datos, format="json")
+    assert r.status_code == 400, r.content
+
+
+def test_stock_enorme_400(admin):
+    datos = datos_repuesto()
+    datos["repuesto"]["cantidad"] = 10**12
+    assert admin.post(URL, datos, format="json").status_code == 400
+
+
+def test_compatibilidad_con_anio_futuro_rechazada(admin):
+    """El mismo tope que el panel: hasta el año actual + 1."""
+    corolla = modelo("Toyota", "Corolla")
+    tope = timezone.localdate().year + 1
+    r = admin.post(
+        URL,
+        datos_repuesto([{"modelo": corolla.id, "anio_desde": 2012, "anio_hasta": tope + 1}]),
+        format="json",
+    )
+    assert r.status_code == 400, r.json()
+    r = admin.post(
+        URL,
+        datos_repuesto([{"modelo": corolla.id, "anio_desde": 2012, "anio_hasta": tope}]),
+        format="json",
+    )
+    assert r.status_code == 201, r.json()
+
+
 def test_repuesto_sin_compatibilidades_rechazado(admin):
     r = admin.post(URL, datos_repuesto(compatibilidades=[]), format="json")
     assert r.status_code == 400
@@ -184,7 +227,7 @@ def test_eliminar_con_ventas_409(admin):
     )
     r = admin.delete(f"{URL}{a.id}/")
     assert r.status_code == 409
-    assert r.json()["detalle"] == "Este artículo tiene ventas: ocúltalo en lugar de borrarlo."
+    assert r.json()["detalle"] == "Este artículo tiene ventas: ocultalo en lugar de borrarlo."
 
 
 def test_colaborador_no_elimina(colaborador):

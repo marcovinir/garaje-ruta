@@ -29,11 +29,24 @@ def _pk(modelo):
     return serializers.PrimaryKeyRelatedField(queryset=modelo.objects.all())
 
 
+# Topes de las columnas de Postgres (PositiveIntegerField y PositiveSmallIntegerField): un
+# número mayor sería un 500. El panel usa los mismos (formulario/esquema.ts).
+ENTERO_MAX = 2_147_483_647
+CHICO_MAX = 32_767
+
+
+def _anio_hasta_el_proximo(anio: int) -> int:
+    maximo = timezone.localdate().year + 1
+    if anio > maximo:
+        raise serializers.ValidationError(f"El año no puede ser mayor que {maximo}.")
+    return anio
+
+
 class AutoEscrituraSerializer(serializers.Serializer):
     modelo = _pk(Modelo)
     anio = serializers.IntegerField(min_value=1950)
     version = serializers.CharField(max_length=60, required=False, allow_blank=True, default="")
-    kilometraje = serializers.IntegerField(min_value=0)
+    kilometraje = serializers.IntegerField(min_value=0, max_value=ENTERO_MAX)
     transmision = _pk(Transmision)
     combustible = _pk(Combustible)
     traccion = _pk(Traccion)
@@ -42,10 +55,14 @@ class AutoEscrituraSerializer(serializers.Serializer):
     color_interior = serializers.CharField(
         max_length=40, required=False, allow_blank=True, default=""
     )
-    cilindrada_cc = serializers.IntegerField(min_value=0, required=False, allow_null=True)
-    puertas = serializers.IntegerField(min_value=1)
-    pasajeros = serializers.IntegerField(min_value=1)
-    bolsas_aire = serializers.IntegerField(min_value=0, required=False, default=0)
+    cilindrada_cc = serializers.IntegerField(
+        min_value=0, max_value=ENTERO_MAX, required=False, allow_null=True
+    )
+    puertas = serializers.IntegerField(min_value=1, max_value=CHICO_MAX)
+    pasajeros = serializers.IntegerField(min_value=1, max_value=CHICO_MAX)
+    bolsas_aire = serializers.IntegerField(
+        min_value=0, max_value=CHICO_MAX, required=False, default=0
+    )
     unico_dueno = serializers.BooleanField()
     procedencia = serializers.ChoiceField(choices=Procedencia.choices)
     marchamo_al_dia = serializers.BooleanField()
@@ -62,16 +79,19 @@ class AutoEscrituraSerializer(serializers.Serializer):
     )
 
     def validate_anio(self, anio: int) -> int:
-        maximo = timezone.localdate().year + 1
-        if anio > maximo:
-            raise serializers.ValidationError(f"El año no puede ser mayor que {maximo}.")
-        return anio
+        return _anio_hasta_el_proximo(anio)
 
 
 class CompatibilidadEscrituraSerializer(serializers.Serializer):
     modelo = _pk(Modelo)
     anio_desde = serializers.IntegerField(min_value=1950)
     anio_hasta = serializers.IntegerField(min_value=1950)
+
+    def validate_anio_desde(self, anio: int) -> int:
+        return _anio_hasta_el_proximo(anio)
+
+    def validate_anio_hasta(self, anio: int) -> int:
+        return _anio_hasta_el_proximo(anio)
 
     def validate(self, datos: dict) -> dict:
         if datos["anio_desde"] > datos["anio_hasta"]:
@@ -84,7 +104,7 @@ class CompatibilidadEscrituraSerializer(serializers.Serializer):
 class RepuestoEscrituraSerializer(serializers.Serializer):
     categoria_pieza = _pk(CategoriaPieza)
     condicion = serializers.ChoiceField(choices=CondicionRepuesto.choices)
-    cantidad = serializers.IntegerField(min_value=0)
+    cantidad = serializers.IntegerField(min_value=0, max_value=ENTERO_MAX)
     codigo_interno = serializers.CharField(
         max_length=40, required=False, allow_null=True, allow_blank=True, default=None
     )
@@ -94,7 +114,7 @@ class RepuestoEscrituraSerializer(serializers.Serializer):
     compatibilidades = CompatibilidadEscrituraSerializer(
         many=True,
         allow_empty=False,
-        error_messages={"empty": "Agrega al menos una compatibilidad."},
+        error_messages={"empty": "Agregá al menos una compatibilidad."},
     )
 
     def validate_codigo_interno(self, codigo: str | None) -> str | None:
@@ -112,9 +132,9 @@ class ArticuloEscrituraSerializer(serializers.Serializer):
     tipo = serializers.ChoiceField(choices=TipoArticulo.choices)
     titulo = serializers.CharField(max_length=150)
     descripcion = serializers.CharField(required=False, allow_blank=True, default="")
-    precio_colones = serializers.IntegerField(min_value=0)
+    precio_colones = serializers.IntegerField(min_value=0, max_value=ENTERO_MAX)
     precio_anterior_colones = serializers.IntegerField(
-        min_value=0, required=False, allow_null=True, default=None
+        min_value=0, max_value=ENTERO_MAX, required=False, allow_null=True, default=None
     )
     destacado = serializers.BooleanField(required=False, default=False)
     auto = AutoEscrituraSerializer(required=False)

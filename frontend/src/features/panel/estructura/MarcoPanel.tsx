@@ -178,7 +178,7 @@ export function MarcoPanel({ yo, children }: { yo: Yo; children: ReactNode }) {
             <button
               type="button"
               aria-expanded={mas}
-              aria-controls="menu-mas"
+              aria-controls={mas ? "menu-mas" : undefined}
               onClick={() => setMas((m) => !m)}
               className="text-tinta-suave flex min-h-14 w-full flex-col items-center justify-center gap-0.5 text-xs font-semibold"
             >

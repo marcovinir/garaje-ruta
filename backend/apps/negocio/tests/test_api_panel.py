@@ -37,7 +37,7 @@ def test_put_reemplaza_horarios(db):
 def test_whatsapp_invalido(db):
     r = cliente("admin").put(URL, datos(whatsapp="8888-7777"), format="json")
     assert r.status_code == 400
-    assert r.json()["campos"]["whatsapp"] == ["Escribe el número con código de país, solo dígitos."]
+    assert r.json()["campos"]["whatsapp"] == ["Escribí el número con código de país, solo dígitos."]
 
 
 def test_horario_invalido(db):

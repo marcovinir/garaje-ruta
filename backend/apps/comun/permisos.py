@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-MENSAJE_SIN_PERMISO = "No tienes permiso para realizar esta acción."
+MENSAJE_SIN_PERMISO = "No tenés permiso para realizar esta acción."
 
 
 def tiene_alguno(*codigos: str) -> type[BasePermission]:

@@ -74,6 +74,19 @@ describe("esquema del formulario", () => {
     ]);
   });
 
+  it("los números enormes se rechazan con el mismo tope que Django", () => {
+    const v = { ...autoValido(), precio_colones: "10000000000" };
+    v.auto = { ...v.auto, kilometraje: "2147483648", puertas: "32768" };
+    expect(errores(v, "auto")).toEqual({
+      precio_colones: "Es demasiado grande.",
+      "auto.kilometraje": "Es demasiado grande.",
+      "auto.puertas": "Es demasiado grande.",
+    });
+    v.precio_colones = "2147483647";
+    v.auto = { ...v.auto, kilometraje: "2147483647", puertas: "32767" };
+    expect(errores(v, "auto")).toEqual({});
+  });
+
   it("un repuesto necesita al menos una compatibilidad con años en orden", () => {
     const v = valoresIniciales("repuesto");
     v.titulo = "Pastillas";

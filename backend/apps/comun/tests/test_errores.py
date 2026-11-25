@@ -26,7 +26,7 @@ class VistaNoExiste(APIView):
 def test_error_validacion_tiene_forma_estandar():
     r = VistaValida.as_view()(APIRequestFactory().post("/x/", {"email": "no"}, format="json"))
     assert r.status_code == 400
-    assert r.data["detalle"] == "Revisa los datos marcados."
+    assert r.data["detalle"] == "Revisá los datos marcados."
     assert list(r.data["campos"]) == ["email"]
     assert isinstance(r.data["campos"]["email"][0], str)
 

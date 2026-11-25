@@ -67,6 +67,7 @@ export function BarraAcciones({
   const [menu, setMenu] = useState(false);
   const [vendiendoVarios, setVendiendoVarios] = useState(false);
   const [cantidad, setCantidad] = useState("1");
+  const [errorCantidad, setErrorCantidad] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [confirmacion, setConfirmacion] = useState<Confirmacion | null>(null);
 
@@ -76,7 +77,7 @@ export function BarraAcciones({
   };
 
   const deshacer = useMutation({
-    mutationFn: () => accionesApi.deshacerVenta(fila.id),
+    mutationFn: (ventaId?: number) => accionesApi.deshacerVenta(fila.id, ventaId),
     onSuccess: (nueva) => {
       reemplazarFila(qc, nueva);
       avisar("Venta deshecha.");
@@ -85,11 +86,11 @@ export function BarraAcciones({
   });
   const vender = useMutation({
     mutationFn: (n: number) => accionesApi.vender(fila.id, n),
-    onSuccess: ({ articulo }, n) => {
+    onSuccess: ({ articulo, venta_id }, n) => {
       reemplazarFila(qc, articulo);
       setVendiendoVarios(false);
       avisar(n > 1 ? `Vendidos ${n}: ${fila.titulo}` : `Vendido: ${fila.titulo}`, {
-        accion: { etiqueta: "Deshacer", alHacer: () => deshacer.mutate() },
+        accion: { etiqueta: "Deshacer", alHacer: () => deshacer.mutate(venta_id) },
       });
     },
     onError: (error) => {
@@ -140,7 +141,16 @@ export function BarraAcciones({
         }),
     })),
     ...(puedeVender && !esAuto && aLaVenta && stock > 1
-      ? [{ etiqueta: "Vendí varios…", hacer: () => setVendiendoVarios(true) }]
+      ? [
+          {
+            etiqueta: "Vendí varios…",
+            hacer: () => {
+              setCantidad("1");
+              setErrorCantidad(null);
+              setVendiendoVarios(true);
+            },
+          },
+        ]
       : []),
     ...(puedeVender && esAuto && fila.estado === "vendido"
       ? [
@@ -286,10 +296,22 @@ export function BarraAcciones({
         titulo={`¿Cuántos vendiste de «${fila.titulo}»?`}
         textoConfirmar="Registrar venta"
         ocupado={vender.isPending}
-        alConfirmar={() => vender.mutate(Number(cantidad))}
+        alConfirmar={() => {
+          const n = Number(cantidad);
+          if (!/^\d+$/.test(cantidad.trim()) || n < 1 || n > stock) {
+            setErrorCantidad(`Entre 1 y ${stock}.`);
+            return;
+          }
+          vender.mutate(n);
+        }}
         alCerrar={() => setVendiendoVarios(false)}
       >
-        <Campo id={`cantidad-${fila.id}`} etiqueta="Cantidad" ayuda={`Quedan ${stock}.`}>
+        <Campo
+          id={`cantidad-${fila.id}`}
+          etiqueta="Cantidad"
+          ayuda={`Quedan ${stock}.`}
+          error={errorCantidad ?? undefined}
+        >
           <input
             id={`cantidad-${fila.id}`}
             type="number"
@@ -297,7 +319,11 @@ export function BarraAcciones({
             min={1}
             max={stock}
             value={cantidad}
-            onChange={(e) => setCantidad(e.target.value)}
+            aria-invalid={errorCantidad ? true : undefined}
+            onChange={(e) => {
+              setCantidad(e.target.value);
+              setErrorCantidad(null);
+            }}
             className={CAMPO}
           />
         </Campo>

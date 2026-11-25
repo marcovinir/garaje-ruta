@@ -12,6 +12,9 @@ import type { ArticuloEscritura, DetallePanel } from "./tipos";
 
 const ANIO_MINIMO = 1950;
 const anioMaximo = () => new Date().getFullYear() + 1;
+// Topes de las columnas de Postgres, iguales a los de Django (serializers_panel.py).
+const ENTERO_MAX = 2_147_483_647;
+const CHICO_MAX = 32_767;
 const REQUERIDO = "Completá este campo.";
 
 const requerido = (mensaje = REQUERIDO) => z.string().trim().min(1, mensaje);
@@ -22,7 +25,8 @@ function entero(
     maximo,
     opcional = false,
     mensaje,
-  }: { maximo?: () => number; opcional?: boolean; mensaje?: string } = {},
+    tope = ENTERO_MAX,
+  }: { maximo?: () => number; opcional?: boolean; mensaje?: string; tope?: number } = {},
 ) {
   return z
     .string()
@@ -41,7 +45,8 @@ function entero(
             ? `Un número entero, ${minimo} o más.`
             : "Un número entero, sin puntos ni espacios."),
       },
-    );
+    )
+    .refine((v) => !/^\d+$/.test(v) || Number(v) <= tope, { message: "Es demasiado grande." });
 }
 
 const anio = () =>
@@ -63,9 +68,9 @@ const esquemaAuto = z.object({
   color_exterior: requerido().max(40, "Máximo 40 caracteres."),
   color_interior: z.string().max(40, "Máximo 40 caracteres."),
   cilindrada_cc: entero(0, { opcional: true }),
-  puertas: entero(1),
-  pasajeros: entero(1),
-  bolsas_aire: entero(0),
+  puertas: entero(1, { tope: CHICO_MAX }),
+  pasajeros: entero(1, { tope: CHICO_MAX }),
+  bolsas_aire: entero(0, { tope: CHICO_MAX }),
   unico_dueno: z.boolean(),
   procedencia: z.enum(["agencia", "importado"]),
   marchamo_al_dia: z.boolean(),

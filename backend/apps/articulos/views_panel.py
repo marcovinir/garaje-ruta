@@ -148,7 +148,11 @@ class ArticuloPanelViewSet(
     @action(detail=True, methods=["post"], url_path="deshacer-venta")
     def deshacer_venta(self, request, pk=None):
         articulo = self.get_object()
-        services.deshacer_ultima_venta(articulo, request.user)
+        entrada = DeshacerVentaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        services.deshacer_ultima_venta(
+            articulo, request.user, entrada.validated_data.get("venta_id")
+        )
         return Response(self._fila(articulo))
 
     @action(detail=True, methods=["put"])
@@ -157,6 +161,10 @@ class ArticuloPanelViewSet(
         entrada.is_valid(raise_exception=True)
         nuevas = services.guardar_fotos(self.get_object(), entrada.validated_data, request.user)
         return Response([foto_json(f) for f in nuevas])
+
+
+class DeshacerVentaSerializer(serializers.Serializer):
+    venta_id = serializers.IntegerField(required=False, min_value=1)
 
 
 class FirmaFotosView(APIView):

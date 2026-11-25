@@ -51,7 +51,7 @@ def test_pedir_vendido_por_estado_400(colaborador):
 def test_salir_de_vendido_por_estado_409(colaborador):
     r = estado(colaborador, crear_auto(estado=EstadoArticulo.VENDIDO), "disponible")
     assert r.status_code == 409
-    assert r.json()["detalle"] == "Deshaz la venta para cambiar el estado."
+    assert r.json()["detalle"] == "Deshacé la venta para cambiar el estado."
 
 
 def test_vender_auto(colaborador):
@@ -116,6 +116,38 @@ def test_deshacer_venta_de_repuesto(colaborador):
     colaborador.post(f"{URL}{r.id}/deshacer-venta/")
     r.repuesto.refresh_from_db()
     assert r.repuesto.cantidad == 3
+
+
+def test_deshacer_con_venta_id_deshace_esa_y_no_la_ultima(colaborador):
+    """El «Deshacer» del aviso manda su venta_id: no toca la venta que otra persona hizo después."""
+    r = crear_repuesto(cantidad=5)
+    mia = colaborador.post(f"{URL}{r.id}/vender/", {"cantidad": 1}, format="json").json()
+    colaborador.post(f"{URL}{r.id}/vender/", {"cantidad": 3}, format="json")
+    resp = colaborador.post(
+        f"{URL}{r.id}/deshacer-venta/", {"venta_id": mia["venta_id"]}, format="json"
+    )
+    assert resp.status_code == 200, resp.json()
+    r.repuesto.refresh_from_db()
+    assert r.repuesto.cantidad == 2
+    assert list(Venta.objects.filter(articulo=r).values_list("cantidad", flat=True)) == [3]
+
+
+def test_deshacer_venta_id_que_ya_no_existe_409(colaborador):
+    r = crear_repuesto(cantidad=3)
+    venta = colaborador.post(f"{URL}{r.id}/vender/", {"cantidad": 1}, format="json").json()
+    colaborador.post(f"{URL}{r.id}/deshacer-venta/", {"venta_id": venta["venta_id"]}, format="json")
+    resp = colaborador.post(
+        f"{URL}{r.id}/deshacer-venta/", {"venta_id": venta["venta_id"]}, format="json"
+    )
+    assert resp.status_code == 409
+    assert resp.json()["detalle"] == "Esa venta ya se deshizo."
+
+
+def test_deshacer_venta_id_no_numerico_400(colaborador):
+    r = crear_repuesto(cantidad=3)
+    colaborador.post(f"{URL}{r.id}/vender/", {"cantidad": 1}, format="json")
+    resp = colaborador.post(f"{URL}{r.id}/deshacer-venta/", {"venta_id": "x"}, format="json")
+    assert resp.status_code == 400
 
 
 def test_deshacer_sin_ventas_409(colaborador):
