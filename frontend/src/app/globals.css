@@ -17,6 +17,11 @@
   /* Fondo rojo con texto blanco (botón de peligro, hover del principal): igual en los dos modos. */
   --color-rojo-fuerte: #b3141f;
   --color-rojo-suave: #fdecee;
+  /* WhatsApp (#115): el verde de la marca va de fondo del botón flotante con el ícono carbón
+     (con blanco daría 1,98:1); los botones con texto blanco usan el verde fuerte (5,45:1). */
+  --color-whatsapp: #25d366;
+  --color-whatsapp-fuerte: #0e7a36;
+  --color-whatsapp-fuerte-hover: #0b6a2e;
 
   --color-disponible: #dcf5e7;
   --color-disponible-tinta: #146c43;
