@@ -11,6 +11,7 @@ test("vender un auto lo saca de la web y deshacer lo devuelve", async ({ page, r
   await entrar(page);
   await page.goto(`${RUTA_PANEL}/articulos?q=${encodeURIComponent(auto.titulo)}`);
   await page.getByRole("button", { name: "Vendido", exact: true }).first().click();
+  await page.getByRole("dialog").getByRole("button", { name: "Sí, marcar vendido" }).click();
   await expect(page.getByText(`Vendido: ${auto.titulo}`)).toBeVisible();
 
   await expect(async () => {
@@ -21,6 +22,7 @@ test("vender un auto lo saca de la web y deshacer lo devuelve", async ({ page, r
   await page.goto(`${RUTA_PANEL}/articulos?q=${encodeURIComponent(auto.titulo)}`);
   await page.getByRole("button", { name: "Más acciones" }).first().click();
   await page.getByRole("button", { name: "Deshacer venta" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Sí, deshacer venta" }).click();
   await expect(page.getByText("Venta deshecha.")).toBeVisible();
 
   await expect(async () => {
