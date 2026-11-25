@@ -57,6 +57,14 @@ describe("configuración del negocio", () => {
     expect(await screen.findByText("Datos del negocio guardados.")).toBeInTheDocument();
   });
 
+  it("el botón Guardar está arriba, antes de los campos", async () => {
+    servidor.use(obtener());
+    renderPanel(<PaginaConfiguracion />);
+    const nombre = await screen.findByLabelText("Nombre del negocio");
+    const guardar = screen.getByRole("button", { name: "Guardar" });
+    expect(guardar.compareDocumentPosition(nombre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("un WhatsApp con guiones o espacios se rechaza antes de enviar", async () => {
     const u = userEvent.setup();
     let enviado = false;

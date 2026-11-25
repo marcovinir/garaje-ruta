@@ -127,6 +127,33 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
       })}
       className="flex flex-col gap-5"
     >
+      {editable ? (
+        // Arriba y fija al bajar (debajo de la barra del celular), para guardar sin ir al final.
+        <div
+          className={`${TARJETA} sticky top-[calc(3.25rem+1px)] z-10 flex flex-wrap items-center justify-between gap-3 p-3 shadow-sm md:top-4`}
+        >
+          {general ? (
+            <p role="alert" className="text-rojo-oscuro font-semibold">
+              {general}
+            </p>
+          ) : (
+            <p className="text-tinta-suave hidden text-sm sm:block">
+              Los cambios se ven en la web al guardar.
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={guardar.isPending}
+            className={`${BOTON_PRIMARIO} ml-auto`}
+          >
+            Guardar
+          </button>
+        </div>
+      ) : (
+        <p className="text-tinta-suave">
+          Solo quien administra el garaje puede cambiar estos datos.
+        </p>
+      )}
       <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-5">
         <legend className="sr-only">Datos del negocio</legend>
         <section className={`${TARJETA} grid grid-cols-1 gap-4 p-5 sm:grid-cols-2`}>
@@ -202,24 +229,6 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
           </p>
         </section>
       </fieldset>
-      {general ? (
-        <p role="alert" className="text-rojo-oscuro font-semibold">
-          {general}
-        </p>
-      ) : null}
-      {editable ? (
-        <button
-          type="submit"
-          disabled={guardar.isPending}
-          className={`${BOTON_PRIMARIO} self-start`}
-        >
-          Guardar
-        </button>
-      ) : (
-        <p className="text-tinta-suave">
-          Solo quien administra el garaje puede cambiar estos datos.
-        </p>
-      )}
     </form>
   );
 }
