@@ -89,7 +89,7 @@ El rewrite de `/api/v1/*` hace que el navegador vea un solo dominio: la cookie d
 | Tipo                                      | Cantidad        | Cómo correrlas                                      |
 | ----------------------------------------- | --------------- | --------------------------------------------------- |
 | Backend (pytest)                          | 307             | `docker compose run --rm backend pytest -q`         |
-| Frontend (Vitest + Testing Library + MSW) | 208             | `cd frontend && npm test`                           |
+| Frontend (Vitest + Testing Library + MSW) | 211             | `cd frontend && npm test`                           |
 | E2E (Playwright, celular y escritorio)    | 4 historias × 2 | `cd frontend && npm run e2e` con el stack levantado |
 
 El CI de GitHub corre las tres en cada PR, más Lighthouse CI. La rama `main` está protegida: todo entra por PR con el CI en verde.
