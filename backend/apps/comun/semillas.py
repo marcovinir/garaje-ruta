@@ -87,7 +87,7 @@ DESDE_2016 = {
 
 
 def equipamiento_posible(
-    nombre: str, carroceria: str, combustible: str, transmision: str, anio: int
+    nombre: str, carroceria: str, combustible: str, transmision: str, anio: int, modelo: str = ""
 ) -> bool:
     """`carroceria` es el slug; `combustible` y `transmision`, los nombres del catálogo."""
     if nombre in SOLO_PICKUP and carroceria != "pickup":
@@ -96,7 +96,9 @@ def equipamiento_posible(
         return False
     if nombre in NO_ELECTRICO and combustible == "Eléctrico":
         return False
-    if nombre in SOLO_CAJA_DUAL and transmision != "Automática/Dual":
+    if nombre in SOLO_CAJA_DUAL and transmision != "Automática con modo manual":
+        return False
+    if nombre in EQUIPAMIENTO_EXCLUIDO_MODELO.get(modelo, set()):
         return False
     return not (nombre in DESDE_2016 and anio < 2016)
 
@@ -214,9 +216,30 @@ def fotos_auto(modelo: str, carroceria: str, combustible: str, anio: int) -> lis
 
 
 DESCRIPCION_AUTO = (
-    "{titulo} en {estado}. {km} km, {transmision}, {combustible}. "
-    "Revisado por nuestro taller y listo para traspaso. Escribinos por WhatsApp para verlo."
+    "{titulo}. {km} km, transmisión {transmision}, combustible {combustible}. "
+    "{color}, tracción {traccion}. Escribinos por WhatsApp para consultar este auto de ejemplo."
 )
 DESCRIPCION_REPUESTO = (
-    "{titulo}, {condicion}. Probado antes de la venta. Consultá la compatibilidad por WhatsApp."
+    "{titulo}, {condicion}. Compatibilidad de ejemplo: {desde}–{hasta}. "
+    "Código interno {codigo}. Consultá la compatibilidad por WhatsApp."
 )
+
+
+# Lista conservadora para los ejemplos: no se deduce equipamiento de una versión.
+# Leaf no ofrece techo solar ni control de descenso; NPR es un camión de trabajo.
+EQUIPAMIENTO_EXCLUIDO_MODELO = {
+    "Leaf": {"Techo solar o panorámico", "Control de descenso"},
+    "NPR": {
+        "Techo solar o panorámico",
+        "Asiento con memoria",
+        "Asientos con calefacción",
+        "Control de descenso",
+    },
+}
+
+
+def nombre_modelo(marca: str, modelo: str) -> str:
+    """Conserva «Mazda 3» en el catálogo y evita anteponer la marca dos veces."""
+    if modelo.casefold().startswith(marca.casefold() + " "):
+        return modelo
+    return f"{marca} {modelo}"

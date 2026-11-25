@@ -121,7 +121,7 @@ def test_equipamiento_coherente_con_el_auto(db):
             assert "Estribos" not in nombres
         if auto.combustible.nombre == "Eléctrico":
             assert "Turbo" not in nombres
-        if auto.transmision.nombre != "Automática/Dual":
+        if auto.transmision.nombre != "Automática con modo manual":
             assert "Caja de cambios dual" not in nombres
         if auto.anio < 2016:
             assert not nombres & {"Apple CarPlay", "Android Auto", "Cargador inalámbrico"}
@@ -172,3 +172,95 @@ def test_sembrar_fotos_coinciden_con_el_articulo(db):
         pieza = next(p for p in semillas.FOTO_PIEZA if repuesto.articulo.titulo.startswith(p))
         fotos = list(repuesto.articulo.fotos.values_list("public_id", flat=True))
         assert fotos == [semillas.FOTO_PIEZA[pieza]]
+
+
+def test_revisar_datos_detecta_inconsistencias_sin_escribir(db):
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    from apps.catalogos.models import Equipamiento, Modelo
+
+    sembrar()
+    auto = (
+        Auto.objects.select_related("articulo", "modelo__marca")
+        .filter(modelo__nombre="Leaf")
+        .first()
+    )
+    auto.articulo.titulo = "Nissan Nissan Leaf"
+    auto.articulo.save(update_fields=["titulo"])
+    auto.equipamiento.add(Equipamiento.objects.get(nombre="Techo solar o panorámico"))
+    auto.articulo.fotos.filter(orden=1).update(public_id=semillas.FOTOS_MODELO["Corolla"][0][0])
+    repuesto = Repuesto.objects.first()
+    repuesto.articulo.titulo = "Faro delantero derecho Nissan X-Trail"
+    repuesto.articulo.save(update_fields=["titulo"])
+    repuesto.compatibilidades.all().delete()
+    Compatibilidad.objects.create(
+        repuesto=repuesto,
+        modelo=Modelo.objects.get(nombre="Leaf"),
+        anio_desde=2014,
+        anio_hasta=2017,
+    )
+    salida = StringIO()
+    with CaptureQueriesContext(connection) as consultas:
+        call_command("revisar_datos", stdout=salida)
+    informe = salida.getvalue()
+    assert "marca repetida" in informe
+    assert "modelo del título sin compatibilidad" in informe
+    assert "compatibilidad no nombrada" in informe
+    assert "equipamiento incompatible: Techo solar o panorámico" in informe
+    assert "foto de otro modelo" in informe
+    assert not any(
+        c["sql"].lstrip().split()[0].upper()
+        in {"INSERT", "UPDATE", "DELETE", "ALTER", "CREATE", "DROP"}
+        for c in consultas
+    )
+
+
+def test_sembrar_titulos_compatibilidades_e_informe(db):
+    sembrar()
+    for articulo in Articulo.objects.all():
+        assert "Mazda Mazda" not in articulo.titulo
+        assert "Revisado por nuestro taller" not in articulo.descripcion
+        assert "Probado antes de la venta" not in articulo.descripcion
+    for repuesto in Repuesto.objects.select_related("articulo"):
+        compatibles = list(repuesto.compatibilidades.select_related("modelo__marca"))
+        assert len(compatibles) == 1
+        modelo = compatibles[0].modelo
+        nombre = (
+            modelo.nombre
+            if modelo.nombre.startswith(modelo.marca.nombre + " ")
+            else f"{modelo.marca.nombre} {modelo.nombre}"
+        )
+        assert repuesto.articulo.titulo.endswith(nombre)
+        assert compatibles[0].anio_desde >= semillas.ANIO_MINIMO.get(modelo.nombre, 2008)
+    salida = StringIO()
+    call_command("revisar_datos", stdout=salida)
+    assert salida.getvalue() == "Inconsistencias: 0. Artículos revisados: 120.\n"
+
+
+def test_migracion_transmision_conserva_id_y_referencias(db):
+    from importlib import import_module
+
+    from django.apps import apps
+
+    from apps.catalogos.models import Transmision
+
+    sembrar()
+    transmision = Transmision.objects.get(nombre="Automática con modo manual")
+    referencias = list(Auto.objects.filter(transmision=transmision).values_list("pk", flat=True))
+    assert referencias
+    transmision.nombre = "Automática/Dual"
+    transmision.save(update_fields=["nombre"])
+    identificador = transmision.pk
+    migracion = import_module("apps.catalogos.migrations.0003_renombrar_transmision")
+    migracion.renombrar(apps, None)
+    transmision.refresh_from_db()
+    assert transmision.pk == identificador
+    assert transmision.nombre == "Automática con modo manual"
+    assert (
+        list(Auto.objects.filter(transmision=transmision).values_list("pk", flat=True))
+        == referencias
+    )
+    migracion.deshacer(apps, None)
+    transmision.refresh_from_db()
+    assert transmision.nombre == "Automática/Dual"
