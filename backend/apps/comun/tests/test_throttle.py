@@ -36,3 +36,22 @@ def test_sin_secreto_configurado_nadie_se_salta_el_limite(db, limite_bajo, setti
     settings.SERVIDOR_NEXT_SECRETO = ""
     c = APIClient(HTTP_X_SERVIDOR_NEXT="")
     assert [c.get("/api/v1/configuracion/").status_code for _ in range(3)][-1] == 429
+
+
+def test_login_no_se_evade_cambiando_x_forwarded_for(db, settings):
+    # En producción Vercel agrega la IP real al final: con NUM_PROXIES=1 DRF cuenta esa, no
+    # lo que el cliente escriba antes en el encabezado.
+    from django.core.cache import cache
+
+    cache.clear()
+    settings.REST_FRAMEWORK = {**settings.REST_FRAMEWORK, "NUM_PROXIES": 1}
+    c = APIClient()
+    codigos = [
+        c.post(
+            "/api/v1/auth/login/",
+            {"email": "nadie@x.test", "password": "mala"},
+            HTTP_X_FORWARDED_FOR=f"9.9.9.{n}, 1.2.3.4",
+        ).status_code
+        for n in range(11)
+    ]
+    assert codigos[-1] == 429

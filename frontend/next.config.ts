@@ -5,6 +5,11 @@ import { reescriturasApi } from "./src/shared/config/rewrites";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Quien ya navega por la web reutiliza las páginas precargadas por este tiempo. 30 s (el
+    // mínimo) en vez de 5 min: un auto vendido sale de su vista en menos de un minuto (HU-04).
+    staleTimes: { static: 30 },
+  },
   // Django usa barra final en sus URLs: Next no debe quitarla antes del rewrite.
   skipTrailingSlashRedirect: true,
   // Las fotos son public_id de Cloudinary: las transforma Cloudinary, no Next.

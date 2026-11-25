@@ -90,7 +90,8 @@ PANEL_RUTA = os.environ.get("PANEL_RUTA", "/panel").rstrip("/")
 SEMILLA_CLAVE_LOCAL_PERMITIDA = False
 
 # Fotos en Cloudinary (CLOUDINARY_URL); las pruebas usan el almacén en memoria.
-ALMACEN_FOTOS = "apps.articulos.fotos.AlmacenCloudinary"
+# En el job E2E de CI se usa el almacén en memoria (sin Cloudinary).
+ALMACEN_FOTOS = os.environ.get("ALMACEN_FOTOS", "apps.articulos.fotos.AlmacenCloudinary")
 
 # Revalidación de Next por etiquetas (vacío = no avisa, p. ej. en local).
 REVALIDACION_SECRETO = os.environ.get("REVALIDACION_SECRETO", "")

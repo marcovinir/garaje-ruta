@@ -11,7 +11,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework.exceptions import ValidationError
 
-from apps.comun.notificaciones import Notificador, obtener_notificador
+from apps.comun.notificaciones import Notificador, enviar_sin_fallar, obtener_notificador
 
 from . import correos
 from .managers import normalizar_email
@@ -46,7 +46,9 @@ def enviar_enlace_recuperacion(email: str, notificador: Notificador | None = Non
         return  # Sin pistas: no revelamos qué correos existen.
     notificador = notificador or obtener_notificador()
     enlace = enlace_para(usuario, "restablecer")
-    notificador.enviar(
+    # Sin fallar: un error del correo respondería distinto y revelaría que el correo existe.
+    enviar_sin_fallar(
+        notificador,
         usuario.email,
         correos.ASUNTO_RECUPERACION,
         correos.texto_recuperacion(usuario.nombre, enlace),
