@@ -181,21 +181,22 @@ class Command(BaseCommand):
             if electrico or carroceria in ("suv", "crossover"):
                 transmision = "Automática"
             elif carroceria == "pickup":
-                transmision = rng.choice(["Manual", "Automática/Dual"])
+                transmision = rng.choice(["Manual", "Automática con modo manual"])
             else:
                 transmision = rng.choice(["Manual", "Automática", "CVT"])
             traccion = "4x4" if carroceria == "pickup" and rng.random() < 0.7 else "4x2"
             if carroceria == "suv" and rng.random() < 0.3:
                 traccion = "AWD"
 
-            titulo = f"{modelo.marca.nombre} {modelo.nombre} {anio}"
+            titulo = f"{semillas.nombre_modelo(modelo.marca.nombre, modelo.nombre)} {anio}"
             publicado = self.ahora - timedelta(days=rng.randint(1, 179), hours=rng.randint(0, 23))
             articulo = Articulo.objects.create(
                 tipo=TipoArticulo.AUTO,
                 titulo=titulo,
                 descripcion=semillas.DESCRIPCION_AUTO.format(
                     titulo=titulo,
-                    estado="muy buen estado",
+                    color=semillas.FOTOS_MODELO[modelo.nombre][1],
+                    traccion=traccion,
                     km=f"{km:,}".replace(",", " "),
                     transmision=transmision.lower(),
                     combustible=combustible.lower(),
@@ -240,7 +241,7 @@ class Command(BaseCommand):
                         e
                         for e in equipamiento
                         if semillas.equipamiento_posible(
-                            e.nombre, carroceria, combustible, transmision, anio
+                            e.nombre, carroceria, combustible, transmision, anio, modelo.nombre
                         )
                     ],
                     cuantos,
@@ -269,12 +270,24 @@ class Command(BaseCommand):
             stock_inicial = rng.randint(1, 3) if agotado else rng.randint(2, 8)
             vendidas = stock_inicial if agotado else rng.randint(0, stock_inicial - 1)
 
-            titulo = f"{pieza} {modelo.marca.nombre} {modelo.nombre}"
+            titulo = f"{pieza} {semillas.nombre_modelo(modelo.marca.nombre, modelo.nombre)}"
+            desde = rng.randint(
+                semillas.ANIO_MINIMO.get(modelo.nombre, 2008),
+                anio_actual - 4
+                if semillas.ANIO_MINIMO.get(modelo.nombre, 2008) <= anio_actual - 4
+                else anio_actual,
+            )
+            hasta = min(anio_actual, desde + rng.randint(2, 6))
+            codigo = f"GR-R{i + 1:04d}"
             articulo = Articulo.objects.create(
                 tipo=TipoArticulo.REPUESTO,
                 titulo=titulo,
                 descripcion=semillas.DESCRIPCION_REPUESTO.format(
-                    titulo=titulo, condicion=CondicionRepuesto(condicion).label.lower()
+                    titulo=titulo,
+                    condicion=CondicionRepuesto(condicion).label.lower(),
+                    desde=desde,
+                    hasta=hasta,
+                    codigo=codigo,
                 ),
                 precio_colones=precio,
                 publicado_en=self.ahora - timedelta(days=rng.randint(1, 179)),
@@ -285,25 +298,15 @@ class Command(BaseCommand):
                 categoria_pieza=categorias[categoria],
                 condicion=condicion,
                 cantidad=stock_inicial - vendidas,
-                codigo_interno=f"GR-R{i + 1:04d}",
+                codigo_interno=codigo,
                 numero_parte=f"{rng.randint(10000, 99999)}-{rng.choice('ABCDEFGHJK')}{i:02d}",
             )
-            desde = rng.randint(2006, anio_actual - 4)
             Compatibilidad.objects.create(
                 repuesto=repuesto,
                 modelo=modelo,
                 anio_desde=desde,
-                anio_hasta=min(anio_actual, desde + rng.randint(2, 6)),
+                anio_hasta=hasta,
             )
-            hermanos = [m for m, _ in modelos if m.marca_id == modelo.marca_id and m != modelo]
-            for otro in rng.sample(hermanos, min(len(hermanos), rng.randint(0, 2))):
-                desde_otro = rng.randint(2008, anio_actual - 3)
-                Compatibilidad.objects.create(
-                    repuesto=repuesto,
-                    modelo=otro,
-                    anio_desde=desde_otro,
-                    anio_hasta=min(anio_actual, desde_otro + rng.randint(1, 5)),
-                )
             self._fotos(articulo, [semillas.FOTO_PIEZA[pieza]])
             self._historial_creacion(articulo)
             for _ in range(vendidas):
