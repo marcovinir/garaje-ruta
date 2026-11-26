@@ -109,15 +109,6 @@ body:has(> header [role="combobox"][aria-expanded="true"]) [data-origen-whatsapp
   display: none;
 }
 
-/* Al quedar menos de 80 px libres a cada lado, el botón va después del pie. */
-@media (width < 82rem) {
-  body:has(> header[data-menu-abierto]) [data-origen-whatsapp="flotante"] {
-    position: static;
-    align-self: end;
-    margin: 0.75rem 1.25rem;
-  }
-}
-
 @media (width < 64rem) and (height < 32rem) {
   html:has(body > header[data-menu-abierto]) {
     scroll-padding-block-start: 7rem;

@@ -70,8 +70,13 @@ test("catálogo público en seis anchos y carga prioritaria solo para la foto pr
         .evaluate((boton) => boton.getBoundingClientRect().height);
       expect(altoBuscar, ruta).toBeGreaterThanOrEqual(44);
       const whatsapp = page.locator("[data-origen-whatsapp=flotante]");
+      // Pedido de Marco (#115): botón fijo abajo a la derecha en todas las páginas públicas
+      // (salvo donde se oculta a propósito: ficha en el celular, menú o sugerencias abiertas).
       if (await whatsapp.isVisible()) {
-        await expect(whatsapp).toHaveCSS("position", ancho < 1312 ? "static" : "fixed");
+        await expect(whatsapp).toHaveCSS("position", "fixed");
+        const caja = await whatsapp.boundingBox();
+        const ventana = page.viewportSize();
+        expect(caja && ventana && caja.y + caja.height <= ventana.height, ruta).toBeTruthy();
       }
     }
     expect(await page.evaluate(() => Reflect.get(window, "__cls")), ruta).toBeLessThan(0.1);
