@@ -64,4 +64,5 @@ jobs:
       - name: Avisar a Next que los datos cambiaron
         if: ${{ always() && steps.base.outputs.lista == 'true' && env.REVALIDACION_SECRETO != '' }}
         run: |
-          curl -sS --fail-with-body -X POST "$FRONTEND_URL/api/revalidar"             -H "Authorization: Bearer $REVALIDACION_SECRETO"             -H "Content-Type: application/json"             -d '{"etiquetas": ["articulos", "catalogos", "configuracion"]}'             || echo "::warning::No se pudo avisar a Next; se pondrá al día con su caché."
+          token="$(printf '%s' "$REVALIDACION_SECRETO" | tr -d '[:space:]')"
+          curl -sS --fail-with-body -X POST "$FRONTEND_URL/api/revalidar"             -H "Authorization: Bearer $token"             -H "Content-Type: application/json"             -d '{"etiquetas": ["articulos", "catalogos", "configuracion"]}'             || echo "::warning::No se pudo avisar a Next; se pondrá al día con su caché."
