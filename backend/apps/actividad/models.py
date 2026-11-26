@@ -98,3 +98,35 @@ class TipoCambio(models.Model):
     @classmethod
     def vigente(cls) -> "TipoCambio | None":
         return cls.objects.order_by("-fecha").first()
+
+
+class TipoEvento(models.TextChoices):
+    VISTA_AUTO = "vehicle_view", "Vista de auto"
+    VISTA_REPUESTO = "part_view", "Vista de repuesto"
+    CLIC_WHATSAPP = "whatsapp_click", "Consulta por WhatsApp"
+    PEDIDO_VISITA = "visit_request", "Solicitud de visita"
+    PEDIDO_COMPATIBILIDAD = "compatibility_request", "Consulta de compatibilidad"
+    BUSQUEDA = "search_submitted", "Búsqueda"
+    FILTRO = "filter_applied", "Aplicación de filtros"
+    VISTA_OFERTAS = "offer_view", "Vista de ofertas"
+
+
+class DispositivoEvento(models.TextChoices):
+    CELULAR = "celular", "Celular"
+    ESCRITORIO = "escritorio", "Escritorio"
+
+
+class EventoComercial(models.Model):
+    tipo = models.CharField(max_length=24, choices=TipoEvento.choices)
+    articulo = models.ForeignKey(
+        Articulo, on_delete=models.SET_NULL, null=True, blank=True, related_name="eventos"
+    )
+    contexto = models.JSONField(default=dict, blank=True)
+    dispositivo = models.CharField(max_length=10, choices=DispositivoEvento.choices)
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "evento_comercial"
+
+    def __str__(self) -> str:
+        return f"{self.get_tipo_display()} · {self.fecha}"

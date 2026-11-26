@@ -9,6 +9,7 @@ import { MensajeError } from "../componentes/MensajeError";
 import { resumirHorarios } from "../componentes/PieDePagina";
 import { TarjetaArticulo } from "../componentes/TarjetaArticulo";
 import { BuscadorCompatible } from "./BuscadorCompatible";
+import { RegistroVistaOfertas } from "./RegistroVistaOfertas";
 
 const RECIENTES = {
   auto: {
@@ -44,6 +45,7 @@ async function Coleccion({
   if (!pagina.results.length) return null;
   return (
     <section aria-labelledby={id}>
+      {id === "ofertas" ? <RegistroVistaOfertas tituloId={id} /> : null}
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         <h2 id={id} className="titulo text-3xl sm:text-4xl">
           {titulo}

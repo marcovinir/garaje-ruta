@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { Encabezado } from "@/features/publico/encabezado/Encabezado";
 import { PieDePagina } from "@/features/publico/componentes/PieDePagina";
+import { RegistroEventosPublicos } from "@/features/publico/componentes/RegistroEventosPublicos";
 import { WhatsappFlotante } from "@/features/publico/componentes/WhatsappFlotante";
 import { obtenerConfiguracion, obtenerTipoCambio } from "@/shared/api/datos";
 
@@ -30,6 +31,7 @@ export default function LayoutPublico({ children }: LayoutProps<"/">) {
         Saltar al contenido
       </a>
       <Encabezado />
+      <RegistroEventosPublicos />
       <main id="contenido" className="flex-1">
         {children}
       </main>

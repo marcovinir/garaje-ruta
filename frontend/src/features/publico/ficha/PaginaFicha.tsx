@@ -176,7 +176,7 @@ function Completa({
   const fotos = ficha.fotos.length ? ficha.fotos : ficha.foto ? [ficha.foto] : [];
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-6 pb-12 sm:px-6">
-      <ContadorVistas id={ficha.id} />
+      <ContadorVistas id={ficha.id} tipo={ficha.tipo} />
       <div className="flex flex-col gap-4">
         <nav aria-label="Ruta de navegación" className="text-tinta-suave text-sm">
           <ol className="flex flex-wrap items-center gap-1.5">

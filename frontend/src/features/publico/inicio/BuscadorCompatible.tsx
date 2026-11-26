@@ -23,6 +23,7 @@ export function BuscadorCompatible({ marcas }: { marcas: Catalogos["marcas"] }) 
       </h2>
       <FormularioGet
         action="/repuestos"
+        seccionEvento="compatibilidad"
         aria-labelledby="buscar-compatibles"
         className="grid gap-3 sm:grid-cols-3 lg:grid-cols-[1fr_1fr_0.65fr_auto] lg:items-end"
       >

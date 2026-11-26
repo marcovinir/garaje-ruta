@@ -312,6 +312,7 @@ export function PanelFiltros({ tipo, id, filtros, catalogos }: Props) {
       // Al navegar con otros filtros el formulario se monta de nuevo con los valores de la URL.
       key={aQueryString(filtros)}
       action={base}
+      seccionEvento="filtros"
       aria-label="Filtros"
       className="flex flex-col gap-4"
     >
