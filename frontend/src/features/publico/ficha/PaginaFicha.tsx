@@ -173,10 +173,6 @@ function Completa({
   configuracion: CondicionesComerciales | null;
 }) {
   const url = urlAbsoluta(ficha.ruta);
-  const ahorro =
-    ficha.auto && ficha.precio_anterior_colones != null
-      ? ficha.precio_anterior_colones - ficha.precio_colones
-      : 0;
   const listado = LISTADO[ficha.tipo];
   const fotos = ficha.fotos.length ? ficha.fotos : ficha.foto ? [ficha.foto] : [];
   return (
@@ -229,14 +225,9 @@ function Completa({
               colones={ficha.precio_colones}
               dolares={ficha.precio_usd}
               anterior={ficha.precio_anterior_colones}
-              mostrarAhorro={ficha.tipo === "repuesto"}
+              mostrarAhorro
               tamano="ficha"
             />
-            {ahorro > 0 && (
-              <p className="text-disponible-tinta text-sm font-semibold">
-                Ahorrás {colones(ahorro)}
-              </p>
-            )}
             {ficha.auto && <ResumenAuto auto={ficha.auto} />}
             {whatsapp ? (
               <div>
