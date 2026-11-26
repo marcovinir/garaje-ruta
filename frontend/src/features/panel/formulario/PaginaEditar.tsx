@@ -1,8 +1,12 @@
 "use client";
 
+import Link from "next/link";
+
 import { EtiquetaEstado } from "@/features/publico/componentes/EtiquetaEstado";
 import { ApiError } from "@/shared/api/navegador";
 
+import { useSesion } from "../auth/useSesion";
+import { rutaPanel } from "../rutaPanel";
 import { RequierePermiso } from "../estructura/RequierePermiso";
 import { EncabezadoPagina } from "../ui/EncabezadoPagina";
 import { BOTON_SECUNDARIO, TARJETA } from "../ui/estilos";
@@ -10,6 +14,7 @@ import { useCatalogos, useDetalle } from "./api";
 import { FormularioArticulo } from "./FormularioArticulo";
 
 function Contenido({ id }: { id: number }) {
+  const { puede } = useSesion();
   const detalle = useDetalle(id);
   const catalogos = useCatalogos();
 
@@ -46,7 +51,16 @@ function Contenido({ id }: { id: number }) {
       <EncabezadoPagina
         titulo={`Editar ${d.tipo === "auto" ? "auto" : "repuesto"}`}
         descripcion={d.titulo}
-        acciones={<EtiquetaEstado estado={d.estado} />}
+        acciones={
+          <>
+            <EtiquetaEstado estado={d.estado} />
+            {puede("historial.ver") && (
+              <Link href={rutaPanel("historial?articulo=" + d.id)} className={BOTON_SECUNDARIO}>
+                Ver historial
+              </Link>
+            )}
+          </>
+        }
       />
       <FormularioArticulo key={d.id} tipo={d.tipo} catalogos={catalogos.data} detalle={d} />
     </>
