@@ -1,3 +1,5 @@
+import { condicionRepuesto } from "./datosComercialesRepuesto";
+
 import type { FichaAuto, FichaRepuesto } from "@/shared/api/tipos";
 import { miles } from "@/shared/lib/dinero";
 
@@ -211,46 +213,69 @@ function Equipamiento({ grupos }: { grupos: FichaAuto["equipamiento"] }) {
 }
 
 export function DatosRepuesto({ repuesto }: { repuesto: FichaRepuesto }) {
-  const categoria = repuesto.categoria.padre
-    ? `${repuesto.categoria.padre} › ${repuesto.categoria.nombre}`
-    : repuesto.categoria.nombre;
+  const categoria = [repuesto.categoria.padre, repuesto.categoria.nombre]
+    .filter((nombre) => nombre?.trim())
+    .join(" › ");
+  const conMotor = repuesto.compatibilidades.some((c) => c.motor_version?.trim());
   return (
     <>
       <Tabla
-        titulo="Datos del repuesto"
+        titulo="Estado de la pieza"
         filas={[
-          ["Categoría", categoria],
-          ["Condición", repuesto.condicion === "nuevo" ? "Nuevo" : "Usado"],
-          ["Disponibles", String(repuesto.cantidad)],
-          ["Número de parte", repuesto.numero_parte || null],
+          ["Condición", condicionRepuesto(repuesto.condicion)],
+          ["Categoría", categoria || "Consultar"],
         ]}
       />
-      <section aria-labelledby="compatibilidad" className="flex flex-col gap-3">
-        <h2 id="compatibilidad" className="titulo text-2xl">
-          Compatible con
-        </h2>
-        {repuesto.compatibilidades.length ? (
-          <ul className="bg-tarjeta border-borde divide-borde divide-y rounded-2xl border">
-            {repuesto.compatibilidades.map((c) => (
-              <li
-                key={`${c.marca}-${c.modelo}-${c.anio_desde}`}
-                className="flex justify-between gap-4 px-4 py-3"
-              >
-                <span className="font-semibold">
-                  {c.marca} {c.modelo}
-                </span>
-                <span className="text-tinta-suave">
-                  {c.anio_desde === c.anio_hasta ? c.anio_desde : `${c.anio_desde}–${c.anio_hasta}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-tinta-suave">
-            Consultanos por WhatsApp para confirmar si le sirve a tu vehículo.
-          </p>
-        )}
-      </section>
+      {repuesto.compatibilidades.length > 0 && (
+        <section aria-labelledby="compatibilidad" className="flex flex-col gap-3">
+          <h2 id="compatibilidad" className="titulo text-2xl">
+            Compatibilidad
+          </h2>
+          <div className="bg-tarjeta border-borde overflow-hidden rounded-2xl border">
+            <table
+              aria-labelledby="compatibilidad"
+              className="w-full table-fixed text-left text-sm"
+            >
+              <thead className="bg-campo">
+                <tr>
+                  {[
+                    "Marca",
+                    "Modelo",
+                    "Año inicial",
+                    "Año final",
+                    ...(conMotor ? ["Motor o versión"] : []),
+                  ].map((titulo) => (
+                    <th
+                      key={titulo}
+                      scope="col"
+                      className="px-2 py-3 align-top break-words sm:px-3"
+                    >
+                      {titulo}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-borde divide-y">
+                {repuesto.compatibilidades.map((c, indice) => (
+                  <tr key={indice}>
+                    {[
+                      c.marca?.trim() || "Consultar",
+                      c.modelo?.trim() || "Consultar",
+                      c.anio_desde ?? "Consultar",
+                      c.anio_hasta ?? "Consultar",
+                      ...(conMotor ? [c.motor_version?.trim() || "Consultar"] : []),
+                    ].map((valor, columna) => (
+                      <td key={columna} className="px-2 py-3 align-top break-words sm:px-3">
+                        {valor}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </>
   );
 }

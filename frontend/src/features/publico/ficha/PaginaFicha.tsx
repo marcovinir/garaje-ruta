@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { obtenerConfiguracion, obtenerSimilares } from "@/shared/api/datos";
 import {
+  type CondicionesComerciales,
   type FichaCompleta,
   type FichaNoDisponible,
   type Tarjeta,
@@ -25,6 +26,11 @@ import { ContadorVistas } from "./ContadorVistas";
 import { DatosAuto, DatosRepuesto, ResumenAuto } from "./Datos";
 import { Galeria } from "./Galeria";
 import { type Seccion, cargarFicha } from "./cargar";
+import {
+  CondicionesRepuesto,
+  IdentificacionRepuesto,
+  resumenRepuesto,
+} from "./datosComercialesRepuesto";
 
 const LISTADO = {
   auto: { href: "/autos", nombre: "Autos" },
@@ -39,6 +45,9 @@ function Similares({
   titulo?: string;
 }) {
   if (!tarjetas.length) return null;
+  if (titulo === "Te pueden interesar" && tarjetas[0].tipo === "repuesto") {
+    titulo = "Repuestos relacionados";
+  }
   return (
     <section aria-labelledby="similares" className="flex flex-col gap-4">
       <h2 id="similares" className="titulo text-3xl">
@@ -110,9 +119,7 @@ function NoDisponible({
 function resumen(f: FichaCompleta): string {
   if (f.repuesto) {
     const r = f.repuesto;
-    return `${r.condicion === "nuevo" ? "Nuevo" : "Usado"} · ${r.categoria.nombre} · ${
-      r.cantidad === 1 ? "Queda 1" : `${r.cantidad} disponibles`
-    }`;
+    return resumenRepuesto(r);
   }
   return "";
 }
@@ -121,10 +128,12 @@ function ContactoFicha({
   ficha,
   numero,
   compacto = false,
+  soloCompatibilidad = false,
 }: {
   ficha: FichaCompleta;
   numero: string;
   compacto?: boolean;
+  soloCompatibilidad?: boolean;
 }) {
   const comun = { precio: ficha.precio_colones, url: urlAbsoluta(ficha.ruta) };
   if (ficha.auto)
@@ -147,6 +156,7 @@ function ContactoFicha({
       tipo="repuesto"
       datos={{ ...comun, nombre: ficha.titulo, numeroParte: ficha.repuesto?.numero_parte }}
       compacto={compacto}
+      soloCompatibilidad={soloCompatibilidad}
     />
   );
 }
@@ -155,16 +165,14 @@ function Completa({
   ficha,
   similares,
   whatsapp,
+  configuracion,
 }: {
   ficha: FichaCompleta;
   similares: Tarjeta[];
   whatsapp: string | null;
+  configuracion: CondicionesComerciales | null;
 }) {
   const url = urlAbsoluta(ficha.ruta);
-  const ahorro =
-    ficha.auto && ficha.precio_anterior_colones != null
-      ? ficha.precio_anterior_colones - ficha.precio_colones
-      : 0;
   const listado = LISTADO[ficha.tipo];
   const fotos = ficha.fotos.length ? ficha.fotos : ficha.foto ? [ficha.foto] : [];
   return (
@@ -207,6 +215,9 @@ function Completa({
                   OFERTA
                 </span>
               ) : null}
+              {ficha.repuesto && ficha.estado_publico === "disponible" ? (
+                <EtiquetaEstado estado={ficha.repuesto.cantidad === 0 ? "agotado" : "disponible"} />
+              ) : null}
             </div>
             <h1 className="titulo text-4xl leading-none">{ficha.titulo}</h1>
             {!ficha.auto && <p className="text-tinta-suave">{resumen(ficha)}</p>}
@@ -214,19 +225,16 @@ function Completa({
               colones={ficha.precio_colones}
               dolares={ficha.precio_usd}
               anterior={ficha.precio_anterior_colones}
+              mostrarAhorro
               tamano="ficha"
             />
-            {ahorro > 0 && (
-              <p className="text-disponible-tinta text-sm font-semibold">
-                Ahorrás {colones(ahorro)}
-              </p>
-            )}
             {ficha.auto && <ResumenAuto auto={ficha.auto} />}
             {whatsapp ? (
               <div>
                 <ContactoFicha ficha={ficha} numero={whatsapp} />
               </div>
             ) : null}
+            {ficha.repuesto && <IdentificacionRepuesto repuesto={ficha.repuesto} />}
             <Compartir titulo={ficha.titulo} url={url} />
           </aside>
           <div className="flex min-w-0 flex-col gap-8">
@@ -240,6 +248,20 @@ function Completa({
             ) : null}
             {ficha.auto ? <DatosAuto auto={ficha.auto} /> : null}
             {ficha.repuesto ? <DatosRepuesto repuesto={ficha.repuesto} /> : null}
+            {ficha.repuesto && !ficha.repuesto.compatibilidades.length && (
+              <section aria-labelledby="compatibilidad" className="flex flex-col gap-3">
+                <h2 id="compatibilidad" className="titulo text-2xl">
+                  Compatibilidad
+                </h2>
+                <div className="bg-tarjeta border-borde flex flex-col items-start gap-3 rounded-2xl border p-4">
+                  <p>Consultá la compatibilidad con tu vehículo</p>
+                  {whatsapp && <ContactoFicha ficha={ficha} numero={whatsapp} soloCompatibilidad />}
+                </div>
+              </section>
+            )}
+            {ficha.repuesto && configuracion && (
+              <CondicionesRepuesto configuracion={configuracion} />
+            )}
           </div>
         </div>
       </div>
@@ -288,7 +310,14 @@ export async function PaginaFicha({ seccion, slug }: Props) {
   if (!esFichaCompleta(ficha)) {
     return <NoDisponible ficha={ficha} similares={similares} whatsapp={whatsapp} />;
   }
-  return <Completa ficha={ficha} similares={similares} whatsapp={whatsapp} />;
+  return (
+    <Completa
+      ficha={ficha.repuesto ? { ...ficha, descripcion: ficha.descripcion.trim() } : ficha}
+      similares={similares}
+      whatsapp={whatsapp}
+      configuracion={configuracion}
+    />
+  );
 }
 
 function EsqueletoFicha() {
