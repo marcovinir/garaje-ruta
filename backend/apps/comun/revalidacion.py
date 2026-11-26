@@ -23,7 +23,8 @@ class Revalidador(Protocol):
 
 class RevalidadorHttp:
     def revalidar(self, etiquetas: list[str]) -> None:
-        secreto = settings.REVALIDACION_SECRETO
+        # Recortado: un secreto pegado con un salto de línea al final rompía el encabezado.
+        secreto = settings.REVALIDACION_SECRETO.strip()
         if not secreto:
             return  # desarrollo local: Next corre sin caché persistente
         try:

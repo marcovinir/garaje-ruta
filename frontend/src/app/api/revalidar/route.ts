@@ -28,7 +28,8 @@ function etiquetasValidas(cuerpo: unknown): string[] | null {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const secreto = process.env.REVALIDACION_SECRETO;
+  // Recortado: un secreto pegado con un salto de línea al final no debe romper el aviso.
+  const secreto = process.env.REVALIDACION_SECRETO?.trim();
   if (!secreto) return Response.json({ detalle: "Revalidación no configurada." }, { status: 503 });
 
   const autorizacion = request.headers.get("authorization") ?? "";
