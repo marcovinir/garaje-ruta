@@ -16,6 +16,7 @@ import { Dialogo } from "../ui/Dialogo";
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO, CAMPO } from "../ui/estilos";
 import { A_LA_VENTA, accionesApi, reemplazarFila, transiciones } from "./acciones";
 import { CLAVE_ARTICULOS } from "./api";
+import { DialogoMarketplace } from "./DialogoMarketplace";
 import type { EstadoArticulo, FilaPanel } from "./tipos";
 
 const OPCION =
@@ -70,6 +71,7 @@ export function BarraAcciones({
   const [errorCantidad, setErrorCantidad] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [confirmacion, setConfirmacion] = useState<Confirmacion | null>(null);
+  const [marketplace, setMarketplace] = useState(false);
 
   const alFallar = (error: unknown) => {
     avisar(mensajeDe(error), { tipo: "error" });
@@ -180,6 +182,7 @@ export function BarraAcciones({
           },
         ]
       : []),
+    { etiqueta: "Texto para Marketplace", hacer: () => setMarketplace(true) },
     ...(puede("articulos.crear") ? [{ etiqueta: "Duplicar", hacer: () => duplicar.mutate() }] : []),
     ...(puede("articulos.eliminar")
       ? [{ etiqueta: "Eliminar", hacer: () => setEliminando(true) }]
@@ -278,6 +281,13 @@ export function BarraAcciones({
         </div>
       ) : null}
 
+      {marketplace ? (
+        <DialogoMarketplace
+          id={fila.id}
+          titulo={fila.titulo}
+          alCerrar={() => setMarketplace(false)}
+        />
+      ) : null}
       <Dialogo
         abierto={confirmacion !== null}
         titulo={confirmacion?.titulo ?? ""}

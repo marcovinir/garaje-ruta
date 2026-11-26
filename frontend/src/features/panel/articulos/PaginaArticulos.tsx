@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 import { Paginacion } from "@/features/publico/filtros/Paginacion";
@@ -13,6 +13,7 @@ import { BOTON_PRIMARIO, BOTON_SECUNDARIO, TARJETA } from "../ui/estilos";
 import { useEscritorio } from "../ui/useEscritorio";
 import { useArticulos, useTipoCambio } from "./api";
 import { BarraAcciones } from "./BarraAcciones";
+import { DialogoMarketplace } from "./DialogoMarketplace";
 import { filtrosPanelDesdeUrl } from "./filtros";
 import { FiltrosPanel } from "./FiltrosPanel";
 import { TablaPanel } from "./TablaPanel";
@@ -38,6 +39,16 @@ export function PaginaArticulos() {
   const puedeEditar = puede("articulos.editar");
   const base = rutaPanel("articulos");
   const hayFiltros = Object.keys(filtros).some((k) => k !== "page");
+  const router = useRouter();
+  // «Texto para Marketplace» desde el aviso de un artículo recién creado.
+  const marketplace = /^[1-9]\d{0,15}$/.test(busqueda.get("marketplace") ?? "")
+    ? Number(busqueda.get("marketplace"))
+    : null;
+  const cerrarMarketplace = () => {
+    const resto = new URLSearchParams(texto);
+    resto.delete("marketplace");
+    router.replace(base + (resto.size ? "?" + resto.toString() : ""));
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -111,6 +122,7 @@ export function PaginaArticulos() {
           />
         </>
       )}
+      <DialogoMarketplace id={marketplace} alCerrar={cerrarMarketplace} />
     </div>
   );
 }

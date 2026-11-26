@@ -47,7 +47,8 @@ export function Dialogo({
       ref={ref}
       aria-labelledby={idTitulo}
       onClose={() => abierto && alCerrar()}
-      className="dialogo-panel bg-tarjeta text-tinta border-borde m-auto w-[min(32rem,calc(100%-2rem))] rounded-2xl border p-0"
+      // text-left: en la tabla del listado el diálogo vive dentro de la celda «Acciones» (a la derecha).
+      className="dialogo-panel bg-tarjeta text-tinta border-borde m-auto w-[min(32rem,calc(100%-2rem))] rounded-2xl border p-0 text-left"
     >
       <div className="flex flex-col gap-4 p-5">
         <h2 id={idTitulo} className="titulo text-2xl">

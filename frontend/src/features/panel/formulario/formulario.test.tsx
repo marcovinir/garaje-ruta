@@ -105,6 +105,9 @@ describe("formulario de artículos", () => {
       auto: { modelo: 40, anio: 2015, transmision: 2, equipamiento: [1] },
     });
     expect(await screen.findByText("Guardado: Toyota Corolla 2015")).toBeInTheDocument();
+    // El aviso ofrece el texto para Marketplace del artículo recién creado.
+    await u.click(screen.getByRole("button", { name: "Texto para Marketplace" }));
+    expect(router.push).toHaveBeenLastCalledWith("/panel/articulos?marketplace=500");
   });
 
   it("un error de Django en un campo anidado aparece junto a ese campo", async () => {
