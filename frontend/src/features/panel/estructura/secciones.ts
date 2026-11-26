@@ -29,6 +29,12 @@ export const SECCIONES: Seccion[] = [
       "M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6m13 9v-1a4 4 0 0 0-3-3.9M16 4.1a3 3 0 0 1 0 5.8",
   },
   {
+    etiqueta: "Reportes",
+    subruta: "reportes",
+    permiso: "reportes.ver",
+    icono: "M4 20h16M6 16v-4m6 4V8m6 8V4",
+  },
+  {
     etiqueta: "Configuración",
     subruta: "configuracion",
     permiso: "articulos.ver",
