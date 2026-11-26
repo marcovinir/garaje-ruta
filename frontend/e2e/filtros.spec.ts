@@ -36,9 +36,7 @@ test("filtros avanzados y compatibilidad en seis anchos", async ({ page, request
     await page.goto(
       `/repuestos?compatible_marca=${marca.id}&compatible_modelo=${modelo.id}&compatible_anio=2020&categoria=frenos&orden=precio_asc`,
     );
-    const nombre = modelo.nombre.startsWith(marca.nombre + " ")
-      ? modelo.nombre
-      : `${marca.nombre} ${modelo.nombre}`;
+    const nombre = modelo.nombre_vehiculo;
     await expect(
       page.getByText(`Mostrando repuestos compatibles con ${nombre} 2020`, { exact: true }),
     ).toBeVisible();

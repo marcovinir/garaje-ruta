@@ -19,7 +19,16 @@ const auto: Tarjeta = {
   precio_anterior_colones: 7200000,
   precio_usd: 14500,
   foto: { public_id: "garaje-ruta/ejemplo/auto-01", ancho: 1448, alto: 1086 },
-  auto: { anio: 2018, kilometraje: 82000, transmision: "Automática", combustible: "Gasolina" },
+  estado_publico: "reservado",
+  auto: {
+    marca: "Mazda",
+    modelo: "Mazda 3",
+    nombre_vehiculo: "Mazda 3",
+    anio: 2018,
+    kilometraje: 82000,
+    transmision: "Automática",
+    combustible: "Gasolina",
+  },
   repuesto: null,
 };
 
@@ -36,7 +45,8 @@ const repuesto: Tarjeta = {
   repuesto: {
     condicion: "usado",
     categoria: "Batería",
-    compatibilidad_resumen: "Corolla 2012–2016 y 2 más",
+    compatibilidad_resumen: "Toyota Corolla 2012–2016 y 2 más",
+    cantidad: 3,
   },
 };
 
@@ -60,19 +70,31 @@ describe("Precio", () => {
 describe("TarjetaArticulo", () => {
   it("auto en oferta: enlace a su ruta, etiqueta y datos clave", () => {
     render(<TarjetaArticulo tarjeta={auto} />);
-    const enlace = screen.getByRole("link", { name: /Toyota Corolla 2018 SE/ });
-    expect(enlace).toHaveAttribute("href", "/autos/toyota-corolla-2018-se-12");
-    expect(within(enlace).getByText("OFERTA")).toBeInTheDocument();
-    expect(
-      within(enlace).getByText("2018 · 82 000 km · Automática · Gasolina"),
-    ).toBeInTheDocument();
-    expect(within(enlace).getByRole("img")).toHaveAttribute("alt", "Toyota Corolla 2018 SE");
+    const enlace = screen.getByRole("link");
+    expect(enlace).toHaveAttribute("href", auto.ruta);
+    const tarjeta = within(enlace);
+    expect(tarjeta.getByRole("heading", { name: /^Mazda 3$/ })).toBeVisible();
+    expect(tarjeta.getByText("2018", { exact: true })).toBeVisible();
+    expect(tarjeta.getByText("Oferta")).toBeVisible();
+    expect(tarjeta.getByText("Reservado")).toBeVisible();
+    expect(tarjeta.getByText("Ahorrás ₡700 000")).toBeVisible();
+    expect(tarjeta.getByText("Antes ₡7 200 000")).toHaveClass("line-through");
+    expect(tarjeta.getByText("Ver detalles")).toBeVisible();
+    expect(enlace.querySelector("a, button, input, select, textarea, [tabindex]")).toBeNull();
   });
 
-  it("repuesto: condición y compatibilidad, sin etiqueta de oferta", () => {
-    render(<TarjetaArticulo tarjeta={repuesto} />);
-    expect(screen.getByText("Usado · Corolla 2012–2016 y 2 más")).toBeInTheDocument();
-    expect(screen.queryByText("OFERTA")).toBeNull();
+  it("repuesto: condición, disponibilidad y compatibilidad", () => {
+    const { rerender } = render(<TarjetaArticulo tarjeta={repuesto} />);
+    expect(screen.getByText("Usado")).toBeVisible();
+    expect(screen.getByText("Toyota Corolla 2012–2016 y 2 más")).toBeVisible();
+    expect(screen.getByText("Quedan 3")).toBeVisible();
+    expect(screen.queryByText(/Ahorrás/)).not.toBeInTheDocument();
+    rerender(
+      <TarjetaArticulo
+        tarjeta={{ ...repuesto, repuesto: { ...repuesto.repuesto!, cantidad: 0 } }}
+      />,
+    );
+    expect(screen.getByText("Agotado")).toBeVisible();
   });
 });
 

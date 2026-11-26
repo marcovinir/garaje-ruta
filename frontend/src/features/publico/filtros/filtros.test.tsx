@@ -20,7 +20,7 @@ const catalogos: Catalogos = {
       id: 3,
       nombre: "Toyota",
       slug: "toyota",
-      modelos: [{ id: 12, nombre: "Corolla", slug: "corolla" }],
+      modelos: [{ id: 12, nombre: "Corolla", slug: "corolla", nombre_vehiculo: "Toyota Corolla" }],
     },
     { id: 5, nombre: "Hyundai", slug: "hyundai", modelos: [] },
   ],

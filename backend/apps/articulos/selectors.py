@@ -8,11 +8,11 @@ from django.contrib.postgres.search import (
     SearchVector,
     TrigramWordSimilarity,
 )
-from django.db.models import Count, F, Q, QuerySet
+from django.db.models import Count, F, Prefetch, Q, QuerySet
 
 from apps.catalogos.models import CategoriaPieza
 
-from .models import Articulo, EstadoArticulo, TipoArticulo
+from .models import Articulo, Compatibilidad, EstadoArticulo, TipoArticulo
 
 CONFIG_BUSQUEDA = "es_unaccent"
 SIMILITUD_MINIMA = 0.3
@@ -39,7 +39,13 @@ def visibles_publico() -> QuerySet[Articulo]:
             "auto__carroceria",
             "repuesto__categoria_pieza__padre",
         )
-        .prefetch_related("fotos", "repuesto__compatibilidades__modelo__marca")
+        .prefetch_related(
+            "fotos",
+            Prefetch(
+                "repuesto__compatibilidades",
+                queryset=Compatibilidad.objects.select_related("modelo__marca"),
+            ),
+        )
     )
 
 

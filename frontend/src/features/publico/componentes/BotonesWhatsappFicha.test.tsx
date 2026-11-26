@@ -9,8 +9,7 @@ import {
 import { BotonesWhatsappFicha } from "./BotonesWhatsappFicha";
 const numero = "50688887777";
 const auto = {
-  marca: "Toyota",
-  modelo: "Corolla",
+  nombre: "Toyota Corolla",
   anio: 2018,
   precio: 6500000,
   url: "https://garaje.test/autos/corolla-1",

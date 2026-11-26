@@ -29,8 +29,10 @@ test("publicar un auto con dos fotos y verlo en /autos", async ({ page }, info) 
 
   await expect(page.getByText(`Guardado: ${titulo}`)).toBeVisible();
   // Django avisa a Next al guardar: la web lo muestra sin esperar la caché.
+  const slug = titulo.toLowerCase().replaceAll(" ", "-");
   await expect(async () => {
     await page.goto("/autos");
-    await expect(page.getByRole("link", { name: new RegExp(titulo) }).first()).toBeVisible();
+    const tarjeta = page.locator(`main a[href^="/autos/${slug}-"]`);
+    await expect(tarjeta.getByText("Ver detalles")).toBeVisible();
   }).toPass({ timeout: 60_000 });
 });

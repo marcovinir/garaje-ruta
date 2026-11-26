@@ -22,8 +22,7 @@ it("arma el enlace de WhatsApp con el mensaje codificado", () => {
 
 const numero = "50688887777";
 const auto = {
-  marca: "Mazda",
-  modelo: "Mazda 3",
+  nombre: "Mazda 3",
   anio: 2018,
   precio: 6500000,
   url: "https://garaje.test/autos/mazda-3-1",
@@ -43,7 +42,7 @@ it("consulta de auto: identidad sin marca duplicada, precio y codificación exac
 it("visita de auto: texto exacto y referencia al final", () => {
   const mensaje = `Hola, me gustaría coordinar una visita para conocer el Toyota Corolla 2018.\n${auto.url}\nReferencia: GR-123`;
   expect(
-    enlaceVisitaAuto(numero, { ...auto, marca: "Toyota", modelo: "Corolla", referencia: "GR-123" }),
+    enlaceVisitaAuto(numero, { ...auto, nombre: "Toyota Corolla", referencia: "GR-123" }),
   ).toBe(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`);
 });
 it("consulta de repuesto: precio y disponibilidad", () => {
