@@ -53,10 +53,14 @@ class AccionHistorial(models.TextChoices):
     VENDER = "vender", "Registró una venta"
     DESHACER_VENTA = "deshacer_venta", "Deshizo una venta"
     FOTOS = "fotos", "Cambió las fotos"
+    ELIMINAR = "eliminar", "Eliminó"
 
 
 class HistorialCambio(models.Model):
-    articulo = models.ForeignKey(Articulo, on_delete=models.CASCADE, related_name="historial")
+    articulo = models.ForeignKey(
+        Articulo, on_delete=models.SET_NULL, related_name="historial", null=True, blank=True
+    )
+    titulo_articulo = models.CharField(max_length=150, blank=True, default="")
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="cambios"
     )
@@ -70,7 +74,7 @@ class HistorialCambio(models.Model):
         verbose_name_plural = "historial de cambios"
 
     def __str__(self) -> str:
-        return f"{self.articulo} · {self.get_accion_display()}"
+        return f"{self.titulo_articulo or self.articulo} · {self.get_accion_display()}"
 
 
 class TipoCambio(models.Model):

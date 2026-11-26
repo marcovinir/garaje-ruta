@@ -16,6 +16,12 @@ export const SECCIONES: Seccion[] = [
       "M3 13l2-6a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 6v5h-3m-12 0H3v-5m4 5a2 2 0 1 0 0-.01M17 18a2 2 0 1 0 0-.01M3 13h18",
   },
   {
+    etiqueta: "Historial",
+    subruta: "historial",
+    permiso: "historial.ver",
+    icono: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2",
+  },
+  {
     etiqueta: "Usuarios",
     subruta: "usuarios",
     permiso: "usuarios.gestionar",

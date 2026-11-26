@@ -77,7 +77,11 @@ CON_VENTAS = "Este artículo tiene ventas: ocultalo en lugar de borrarlo."
 
 def registrar(articulo: Articulo, usuario, accion: str, detalle: dict | None = None) -> None:
     HistorialCambio.objects.create(
-        articulo=articulo, usuario=usuario, accion=accion, detalle=detalle or {}
+        articulo=articulo,
+        titulo_articulo=articulo.titulo,
+        usuario=usuario,
+        accion=accion,
+        detalle=detalle or {},
     )
 
 
@@ -211,6 +215,8 @@ def eliminar_articulo(articulo: Articulo, usuario) -> None:
         raise Conflicto(CON_VENTAS)
     fotos = list(articulo.fotos.values_list("public_id", flat=True))
     articulo_id = articulo.id
+    articulo.historial.filter(titulo_articulo="").update(titulo_articulo=articulo.titulo)
+    registrar(articulo, usuario, AccionHistorial.ELIMINAR)
     articulo.delete()
     _borrar_fotos_al_confirmar(fotos)
     revalidar_articulo(articulo_id)

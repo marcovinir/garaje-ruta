@@ -184,6 +184,10 @@ describe("formulario de artículos", () => {
       }),
     );
     renderPanel(<PaginaEditar id={101} />);
+    expect(await screen.findByRole("link", { name: "Ver historial" })).toHaveAttribute(
+      "href",
+      "/panel/historial?articulo=101",
+    );
     const titulo = await screen.findByLabelText("Título");
     expect(titulo).toHaveValue("Toyota Corolla 2015");
     expect(screen.getByLabelText("Marca")).toHaveValue("13");
