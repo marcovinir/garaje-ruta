@@ -3,6 +3,8 @@
 from django.db.models import Sum
 from rest_framework import serializers
 
+from apps.catalogos.presentacion import nombre_modelo
+
 from .models import COMBUSTIBLES_CON_BATERIA, Articulo, TipoArticulo
 from .presentacion import precio_usd, ruta_publica
 
@@ -20,13 +22,15 @@ def resumen_compatibilidad(repuesto) -> str:
     if not compatibilidades:
         return ""
     primera = compatibilidades[0]
-    texto = f"{primera.modelo.nombre} {primera.anio_desde}–{primera.anio_hasta}"
+    nombre = nombre_modelo(primera.modelo.marca.nombre, primera.modelo.nombre)
+    texto = f"{nombre} {primera.anio_desde}–{primera.anio_hasta}"
     resto = len(compatibilidades) - 1
     return f"{texto} y {resto} más" if resto else texto
 
 
 class TarjetaSerializer(serializers.ModelSerializer):
     ruta = serializers.SerializerMethodField()
+    estado_publico = serializers.SerializerMethodField()
     precio_usd = serializers.SerializerMethodField()
     foto = serializers.SerializerMethodField()
     auto = serializers.SerializerMethodField()
@@ -39,6 +43,7 @@ class TarjetaSerializer(serializers.ModelSerializer):
             "tipo",
             "titulo",
             "ruta",
+            "estado_publico",
             "precio_colones",
             "precio_anterior_colones",
             "precio_usd",
@@ -46,6 +51,11 @@ class TarjetaSerializer(serializers.ModelSerializer):
             "auto",
             "repuesto",
         ]
+
+    def get_estado_publico(self, articulo: Articulo) -> str:
+        from .selectors import estado_publico
+
+        return estado_publico(articulo)
 
     def get_ruta(self, articulo: Articulo) -> str:
         return ruta_publica(articulo)
@@ -62,7 +72,11 @@ class TarjetaSerializer(serializers.ModelSerializer):
         if articulo.tipo != TipoArticulo.AUTO:
             return None
         auto = articulo.auto
+        marca, modelo = auto.modelo.marca.nombre, auto.modelo.nombre
         return {
+            "marca": marca,
+            "modelo": modelo,
+            "nombre_vehiculo": nombre_modelo(marca, modelo),
             "anio": auto.anio,
             "kilometraje": auto.kilometraje,
             "transmision": auto.transmision.nombre,
@@ -75,6 +89,7 @@ class TarjetaSerializer(serializers.ModelSerializer):
         repuesto = articulo.repuesto
         return {
             "condicion": repuesto.condicion,
+            "cantidad": repuesto.cantidad,
             "categoria": repuesto.categoria_pieza.nombre,
             "compatibilidad_resumen": resumen_compatibilidad(repuesto),
         }
@@ -88,24 +103,17 @@ def equipamiento_agrupado(auto) -> list[dict]:
 
 
 class FichaSerializer(TarjetaSerializer):
-    estado_publico = serializers.SerializerMethodField()
     fotos = serializers.SerializerMethodField()
     vistas_total = serializers.SerializerMethodField()
 
     class Meta(TarjetaSerializer.Meta):
         fields = [
             *TarjetaSerializer.Meta.fields,
-            "estado_publico",
             "descripcion",
             "publicado_en",
             "fotos",
             "vistas_total",
         ]
-
-    def get_estado_publico(self, articulo: Articulo) -> str:
-        from .selectors import estado_publico
-
-        return estado_publico(articulo)
 
     def get_fotos(self, articulo: Articulo) -> list[dict]:
         return [foto_json(f) for f in articulo.fotos.all()]
@@ -121,6 +129,7 @@ class FichaSerializer(TarjetaSerializer):
         return {
             "marca": a.modelo.marca.nombre,
             "modelo": a.modelo.nombre,
+            "nombre_vehiculo": nombre_modelo(a.modelo.marca.nombre, a.modelo.nombre),
             "anio": a.anio,
             "version": a.version,
             "kilometraje": a.kilometraje,

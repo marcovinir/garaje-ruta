@@ -28,9 +28,7 @@ test("la ficha tiene Open Graph, canónica y botón de WhatsApp", async ({ page,
   expect(respuesta.ok()).toBeTruthy();
   const ficha: FichaCompleta = await respuesta.json();
   const datos = ficha.auto!;
-  const modelo = datos.modelo.startsWith(datos.marca + " ")
-    ? datos.modelo
-    : `${datos.marca} ${datos.modelo}`;
+  const modelo = datos.nombre_vehiculo;
   const mensaje = new URL(href).searchParams.get("text");
   expect(mensaje).toBe(
     `Hola, estoy interesado en el ${modelo} ${datos.anio} publicado en ${colones(ficha.precio_colones)}. ¿Todavía está disponible?\n${new URL(auto.ruta, page.url()).href}`,

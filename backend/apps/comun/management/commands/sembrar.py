@@ -35,6 +35,7 @@ from apps.catalogos.models import (
     Traccion,
     Transmision,
 )
+from apps.catalogos.presentacion import nombre_modelo
 from apps.comun import semillas
 from apps.cuentas.models import Usuario
 
@@ -188,7 +189,7 @@ class Command(BaseCommand):
             if carroceria == "suv" and rng.random() < 0.3:
                 traccion = "AWD"
 
-            titulo = f"{semillas.nombre_modelo(modelo.marca.nombre, modelo.nombre)} {anio}"
+            titulo = f"{nombre_modelo(modelo.marca.nombre, modelo.nombre)} {anio}"
             publicado = self.ahora - timedelta(days=rng.randint(1, 179), hours=rng.randint(0, 23))
             articulo = Articulo.objects.create(
                 tipo=TipoArticulo.AUTO,
@@ -270,7 +271,7 @@ class Command(BaseCommand):
             stock_inicial = rng.randint(1, 3) if agotado else rng.randint(2, 8)
             vendidas = stock_inicial if agotado else rng.randint(0, stock_inicial - 1)
 
-            titulo = f"{pieza} {semillas.nombre_modelo(modelo.marca.nombre, modelo.nombre)}"
+            titulo = f"{pieza} {nombre_modelo(modelo.marca.nombre, modelo.nombre)}"
             desde = rng.randint(
                 semillas.ANIO_MINIMO.get(modelo.nombre, 2008),
                 anio_actual - 4

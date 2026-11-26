@@ -58,6 +58,7 @@ const ficha: FichaCompleta = {
   auto: {
     marca: "Toyota",
     modelo: "Corolla",
+    nombre_vehiculo: "Toyota Corolla",
     anio: 2015,
     version: "SE",
     kilometraje: 82000,

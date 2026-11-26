@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 
 from apps.articulos.models import Articulo, Auto, Repuesto
 from apps.catalogos.models import Marca, Modelo
+from apps.catalogos.presentacion import nombre_modelo
 from apps.comun import semillas
 
 
@@ -39,7 +40,7 @@ class Command(BaseCommand):
                 for modelo in modelos
                 if re.search(
                     r"(?<!\w)"
-                    + re.escape(semillas.nombre_modelo(modelo.marca.nombre, modelo.nombre))
+                    + re.escape(nombre_modelo(modelo.marca.nombre, modelo.nombre))
                     + r"(?!\w)",
                     titulo,
                     re.I,
@@ -54,7 +55,7 @@ class Command(BaseCommand):
                         agregar(
                             repuesto.articulo,
                             "compatibilidad no nombrada: "
-                            + semillas.nombre_modelo(c.modelo.marca.nombre, c.modelo.nombre),
+                            + nombre_modelo(c.modelo.marca.nombre, c.modelo.nombre),
                         )
 
         exteriores = {foto for fotos, _ in semillas.FOTOS_MODELO.values() for foto in fotos}
