@@ -53,3 +53,25 @@ def test_colaborador_ve_pero_no_edita(db):
     c = cliente("colaborador")
     assert c.get(URL).status_code == 200
     assert c.put(URL, datos(), format="json").status_code == 403
+
+
+def test_condiciones_comerciales_del_negocio(db):
+    from rest_framework.test import APIClient
+
+    campos = {
+        "garantia_repuestos": "Según la pieza",
+        "condiciones_devolucion": None,
+        "metodos_entrega": "Retiro en el local",
+        "metodos_pago": "Transferencia",
+        "condiciones_compra": "   ",
+    }
+    publicos = APIClient().get("/api/v1/configuracion/").json()
+    assert all(publicos[campo] is None for campo in campos)
+    c = cliente("admin")
+    res = c.put(URL, datos(**campos), format="json")
+    assert res.status_code == 200
+    campos["condiciones_compra"] = None
+    publicos = APIClient().get("/api/v1/configuracion/").json()
+    for campo, valor in campos.items():
+        assert res.json()[campo] == publicos[campo] == valor
+    assert c.put(URL, datos(), format="json").json()["metodos_pago"] == "Transferencia"

@@ -55,6 +55,34 @@ const anio = () =>
     mensaje: `Un año entre ${ANIO_MINIMO} y ${anioMaximo()}.`,
   });
 
+const textoOpcional = (maximo: number) =>
+  z.string().trim().max(maximo, `Máximo ${maximo} caracteres.`);
+const siNo = z.enum(["", "si", "no"]);
+const conBateria = new Set(["Eléctrico", "Híbrido enchufable"]);
+
+export function admiteDatosBateria(catalogos: Catalogos, combustible: string): boolean {
+  const elegido = catalogos.combustibles.find((c) => String(c.id) === combustible);
+  return elegido !== undefined && conBateria.has(elegido.nombre);
+}
+
+const camposBateria = {
+  bateria_kwh: z
+    .string()
+    .trim()
+    .refine(
+      (v) => !v || (/^\d+(?:[.,]\d{1,2})?$/.test(v) && Number(v.replace(",", ".")) <= ENTERO_MAX),
+      "Ingresá un número entre 0 y 2 147 483 647 con hasta dos decimales.",
+    ),
+  bateria_salud_pct: entero(0, {
+    maximo: () => 100,
+    opcional: true,
+    mensaje: "Un número entero del 0 al 100.",
+  }),
+  autonomia_km: entero(0, { opcional: true }),
+  tipo_carga: textoOpcional(80),
+};
+const esquemaBateria = z.object(camposBateria);
+
 const esquemaAuto = z.object({
   marca: requerido("Elegí la marca."),
   modelo: requerido("Elegí el modelo."),
@@ -85,6 +113,22 @@ const esquemaAuto = z.object({
     mensaje: "Un dígito del 0 al 9.",
   }),
   equipamiento: z.array(z.string()),
+  marchamo_anio: entero(ANIO_MINIMO, {
+    maximo: anioMaximo,
+    tope: CHICO_MAX,
+    opcional: true,
+    mensaje: `Un año entre ${ANIO_MINIMO} y ${anioMaximo()}.`,
+  }),
+  traspaso_incluido: siNo,
+  financiamiento: siNo,
+  sin_gravamenes: siNo,
+  historial_mantenimiento: textoOpcional(250),
+  historial_accidentes: textoOpcional(250),
+  garantia: textoOpcional(250),
+  bateria_kwh: z.string(),
+  bateria_salud_pct: z.string(),
+  autonomia_km: z.string(),
+  tipo_carga: z.string(),
 });
 
 const esquemaCompatibilidad = z
@@ -93,6 +137,7 @@ const esquemaCompatibilidad = z
     modelo: requerido("Elegí el modelo."),
     anio_desde: anio(),
     anio_hasta: anio(),
+    motor_version: textoOpcional(80),
   })
   .superRefine((c, ctx) => {
     if (/^\d+$/.test(c.anio_desde) && /^\d+$/.test(c.anio_hasta) && +c.anio_hasta < +c.anio_desde) {
@@ -110,6 +155,8 @@ const esquemaRepuesto = z.object({
   cantidad: entero(0),
   codigo_interno: z.string().max(40, "Máximo 40 caracteres."),
   numero_parte: z.string().max(60, "Máximo 60 caracteres."),
+  fabricante: textoOpcional(80),
+  clasificacion: z.enum(["", "original", "oem", "generico"]),
   compatibilidades: z.array(esquemaCompatibilidad).min(1, "Agregá al menos una compatibilidad."),
 });
 
@@ -127,7 +174,16 @@ export type ValoresFormulario = {
 };
 
 /** Esquema para el tipo del formulario; la otra parte (auto o repuesto) no se valida. */
-export function esquemaArticulo(tipo: "auto" | "repuesto") {
+export function esquemaArticulo(tipo: "auto" | "repuesto", catalogos?: Catalogos) {
+  const auto = esquemaAuto.superRefine((valores, contexto) => {
+    if (catalogos && !admiteDatosBateria(catalogos, valores.combustible)) return;
+    const resultado = esquemaBateria.safeParse(valores);
+    if (!resultado.success) {
+      for (const error of resultado.error.issues) {
+        contexto.addIssue({ code: "custom", path: error.path, message: error.message });
+      }
+    }
+  });
   return z
     .object({
       tipo: z.enum(["auto", "repuesto"]),
@@ -136,7 +192,7 @@ export function esquemaArticulo(tipo: "auto" | "repuesto") {
       precio_colones: entero(0),
       precio_anterior_colones: entero(0, { opcional: true }),
       destacado: z.boolean(),
-      auto: tipo === "auto" ? esquemaAuto : z.any(),
+      auto: tipo === "auto" ? auto : z.any(),
       repuesto: tipo === "repuesto" ? esquemaRepuesto : z.any(),
     })
     .superRefine((v, ctx) => {
@@ -156,6 +212,7 @@ export const compatibilidadVacia = () => ({
   modelo: "",
   anio_desde: "",
   anio_hasta: "",
+  motor_version: "",
 });
 
 export function valoresIniciales(tipo: "auto" | "repuesto"): ValoresFormulario {
@@ -192,6 +249,17 @@ export function valoresIniciales(tipo: "auto" | "repuesto"): ValoresFormulario {
       estado_general: "bueno",
       placa_termina_en: "",
       equipamiento: [],
+      marchamo_anio: "",
+      traspaso_incluido: "",
+      financiamiento: "",
+      sin_gravamenes: "",
+      historial_mantenimiento: "",
+      historial_accidentes: "",
+      garantia: "",
+      bateria_kwh: "",
+      bateria_salud_pct: "",
+      autonomia_km: "",
+      tipo_carga: "",
     },
     repuesto: {
       categoria_pieza: "",
@@ -199,6 +267,8 @@ export function valoresIniciales(tipo: "auto" | "repuesto"): ValoresFormulario {
       cantidad: "1",
       codigo_interno: "",
       numero_parte: "",
+      fabricante: "",
+      clasificacion: "",
       compatibilidades: [compatibilidadVacia()],
     },
   };
@@ -207,7 +277,11 @@ export function valoresIniciales(tipo: "auto" | "repuesto"): ValoresFormulario {
 const numero = (v: string) => Number(v.trim());
 const numeroONulo = (v: string) => (v.trim() === "" ? null : Number(v.trim()));
 
-export function aEscritura(v: ValoresFormulario): ArticuloEscritura {
+const booleanoONulo = (valor: ValoresAuto["financiamiento"]) =>
+  valor === "" ? null : valor === "si";
+const aSiNo = (valor?: boolean | null) => (valor == null ? "" : valor ? "si" : "no");
+
+export function aEscritura(v: ValoresFormulario, catalogos?: Catalogos): ArticuloEscritura {
   const comunes = {
     tipo: v.tipo,
     titulo: v.titulo.trim(),
@@ -218,8 +292,18 @@ export function aEscritura(v: ValoresFormulario): ArticuloEscritura {
   };
   if (v.tipo === "auto") {
     // La marca solo sirve para elegir el modelo: Django no la recibe.
-    const a: Omit<ValoresAuto, "marca"> & { marca?: string } = { ...v.auto };
-    delete a.marca;
+    const base: Omit<ValoresAuto, "marca"> & { marca?: string } = { ...v.auto };
+    delete base.marca;
+    const { bateria_kwh, bateria_salud_pct, autonomia_km, tipo_carga, ...a } = base;
+    const bateria =
+      !catalogos || admiteDatosBateria(catalogos, a.combustible)
+        ? {
+            bateria_kwh: numeroONulo(bateria_kwh.replace(",", ".")),
+            bateria_salud_pct: numeroONulo(bateria_salud_pct),
+            autonomia_km: numeroONulo(autonomia_km),
+            tipo_carga: tipo_carga.trim() || null,
+          }
+        : {};
     return {
       ...comunes,
       auto: {
@@ -241,6 +325,14 @@ export function aEscritura(v: ValoresFormulario): ArticuloEscritura {
         riteve_vence: a.riteve_vence || null,
         placa_termina_en: numeroONulo(a.placa_termina_en),
         equipamiento: a.equipamiento.map(Number).sort((x, y) => x - y),
+        marchamo_anio: numeroONulo(a.marchamo_anio),
+        traspaso_incluido: booleanoONulo(a.traspaso_incluido),
+        financiamiento: booleanoONulo(a.financiamiento),
+        sin_gravamenes: booleanoONulo(a.sin_gravamenes),
+        historial_mantenimiento: a.historial_mantenimiento.trim() || null,
+        historial_accidentes: a.historial_accidentes.trim() || null,
+        garantia: a.garantia.trim() || null,
+        ...bateria,
       },
     };
   }
@@ -253,10 +345,13 @@ export function aEscritura(v: ValoresFormulario): ArticuloEscritura {
       cantidad: numero(r.cantidad),
       codigo_interno: r.codigo_interno.trim() || null,
       numero_parte: r.numero_parte.trim(),
+      fabricante: r.fabricante.trim() || null,
+      clasificacion: r.clasificacion || null,
       compatibilidades: r.compatibilidades.map((c) => ({
         modelo: numero(c.modelo),
         anio_desde: numero(c.anio_desde),
         anio_hasta: numero(c.anio_hasta),
+        motor_version: c.motor_version.trim() || null,
       })),
     },
   };
@@ -267,7 +362,7 @@ function marcaDe(modelo: number, catalogos: Catalogos): string {
   return marca ? String(marca.id) : "";
 }
 
-const texto = (n: number | null) => (n === null ? "" : String(n));
+const texto = (n?: number | null) => (n == null ? "" : String(n));
 
 export function desdeDetalle(d: DetallePanel, catalogos: Catalogos): ValoresFormulario {
   const base = valoresIniciales(d.tipo);
@@ -298,6 +393,17 @@ export function desdeDetalle(d: DetallePanel, catalogos: Catalogos): ValoresForm
       riteve_vence: a.riteve_vence ?? "",
       placa_termina_en: texto(a.placa_termina_en),
       equipamiento: a.equipamiento.map(String),
+      marchamo_anio: texto(a.marchamo_anio),
+      traspaso_incluido: aSiNo(a.traspaso_incluido),
+      financiamiento: aSiNo(a.financiamiento),
+      sin_gravamenes: aSiNo(a.sin_gravamenes),
+      historial_mantenimiento: a.historial_mantenimiento ?? "",
+      historial_accidentes: a.historial_accidentes ?? "",
+      garantia: a.garantia ?? "",
+      bateria_kwh: texto(a.bateria_kwh),
+      bateria_salud_pct: texto(a.bateria_salud_pct),
+      autonomia_km: texto(a.autonomia_km),
+      tipo_carga: a.tipo_carga ?? "",
     };
   }
   if (d.repuesto) {
@@ -308,11 +414,14 @@ export function desdeDetalle(d: DetallePanel, catalogos: Catalogos): ValoresForm
       cantidad: String(r.cantidad),
       codigo_interno: r.codigo_interno ?? "",
       numero_parte: r.numero_parte,
+      fabricante: r.fabricante ?? "",
+      clasificacion: r.clasificacion ?? "",
       compatibilidades: r.compatibilidades.map((c) => ({
         marca: marcaDe(c.modelo, catalogos),
         modelo: String(c.modelo),
         anio_desde: String(c.anio_desde),
         anio_hasta: String(c.anio_hasta),
+        motor_version: c.motor_version ?? "",
       })),
     };
   }

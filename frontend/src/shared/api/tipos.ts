@@ -26,7 +26,28 @@ export type Pagina<T> = {
   results: T[];
 };
 
-export type FichaAuto = {
+export type DatosComercialesAuto = {
+  marchamo_anio?: number | null;
+  traspaso_incluido?: boolean | null;
+  financiamiento?: boolean | null;
+  sin_gravamenes?: boolean | null;
+  historial_mantenimiento?: string | null;
+  historial_accidentes?: string | null;
+  garantia?: string | null;
+  bateria_kwh?: number | null;
+  bateria_salud_pct?: number | null;
+  autonomia_km?: number | null;
+  tipo_carga?: string | null;
+};
+
+export type ClasificacionRepuesto = "original" | "oem" | "generico";
+
+export type DatosComercialesRepuesto = {
+  fabricante?: string | null;
+  clasificacion?: ClasificacionRepuesto | null;
+};
+
+export type FichaAuto = DatosComercialesAuto & {
   marca: string;
   modelo: string;
   anio: number;
@@ -54,12 +75,18 @@ export type FichaAuto = {
   equipamiento: { grupo: string; items: string[] }[];
 };
 
-export type FichaRepuesto = {
+export type FichaRepuesto = DatosComercialesRepuesto & {
   condicion: "nuevo" | "usado";
   categoria: { nombre: string; padre: string | null };
   cantidad: number;
   numero_parte: string;
-  compatibilidades: { marca: string; modelo: string; anio_desde: number; anio_hasta: number }[];
+  compatibilidades: {
+    marca: string;
+    modelo: string;
+    anio_desde: number;
+    anio_hasta: number;
+    motor_version?: string | null;
+  }[];
 };
 
 export type FichaCompleta = Omit<Tarjeta, "auto" | "repuesto"> & {
@@ -99,7 +126,15 @@ export type Catalogos = {
   equipamiento: { grupo: string; items: { id: number; nombre: string; filtrable: boolean }[] }[];
 };
 
-export type Configuracion = {
+export type CondicionesComerciales = {
+  garantia_repuestos?: string | null;
+  condiciones_devolucion?: string | null;
+  metodos_entrega?: string | null;
+  metodos_pago?: string | null;
+  condiciones_compra?: string | null;
+};
+
+export type Configuracion = CondicionesComerciales & {
   nombre: string;
   logo_public_id: string;
   whatsapp: string;

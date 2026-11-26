@@ -1,10 +1,10 @@
-import type { FotoApi } from "@/shared/api/tipos";
+import type { DatosComercialesAuto, DatosComercialesRepuesto, FotoApi } from "@/shared/api/tipos";
 
 import type { EstadoArticulo } from "../articulos/tipos";
 
 /** Espejo de `DetallePanelSerializer` y `ArticuloEscrituraSerializer` (serializers_panel.py). */
 
-export type AutoDetalle = {
+export type AutoDetalle = DatosComercialesAuto & {
   modelo: number;
   anio: number;
   version: string;
@@ -36,9 +36,10 @@ export type CompatibilidadDetalle = {
   modelo: number;
   anio_desde: number;
   anio_hasta: number;
+  motor_version?: string | null;
 };
 
-export type RepuestoDetalle = {
+export type RepuestoDetalle = DatosComercialesRepuesto & {
   categoria_pieza: number;
   condicion: "nuevo" | "usado";
   cantidad: number;

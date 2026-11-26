@@ -268,3 +268,93 @@ def test_listado_del_panel_ignora_fechas_invalidas(admin):
     assert admin.get(f"{URL}?desde=abc").status_code == 200
     assert admin.get(f"{URL}?hasta=2026-99-99").json()["count"] == 1
     assert admin.get(f"{URL}?desde=2999-01-01").json()["count"] == 0
+
+
+def test_datos_comerciales_auto_panel_y_ficha(admin):
+    from rest_framework.test import APIClient
+
+    campos = {
+        "marchamo_anio": timezone.localdate().year,
+        "traspaso_incluido": False,
+        "financiamiento": True,
+        "sin_gravamenes": None,
+        "historial_mantenimiento": "Facturas disponibles",
+        "historial_accidentes": None,
+        "garantia": "Consultar condiciones",
+        "bateria_kwh": 42.75,
+        "bateria_salud_pct": 0,
+        "autonomia_km": 240,
+        "tipo_carga": "CCS",
+    }
+    combustible = Combustible.objects.get(nombre="Híbrido enchufable").pk
+    res = admin.post(URL, datos_auto(combustible=combustible, **campos), format="json")
+    assert res.status_code == 201
+    id_articulo = res.json()["id"]
+    for respuesta in (res, APIClient().get(f"/api/v1/articulos/{id_articulo}/")):
+        datos = respuesta.json()["auto"]
+        assert {clave: datos[clave] for clave in campos} == campos
+    editado = admin.patch(
+        f"{URL}{id_articulo}/",
+        {"auto": {"garantia": " ", "bateria_salud_pct": 100, "bateria_kwh": 41.5}},
+        format="json",
+    )
+    assert editado.status_code == 200
+    assert editado.json()["auto"]["garantia"] is None
+    assert editado.json()["auto"]["traspaso_incluido"] is False
+    assert editado.json()["auto"]["bateria_kwh"] == 41.5
+    gasolina = Combustible.objects.get(nombre="Gasolina").pk
+    assert (
+        admin.patch(
+            f"{URL}{id_articulo}/", {"auto": {"combustible": gasolina}}, format="json"
+        ).status_code
+        == 200
+    )
+    ficha = APIClient().get(f"/api/v1/articulos/{id_articulo}/").json()["auto"]
+    for clave in ("bateria_kwh", "bateria_salud_pct", "autonomia_km", "tipo_carga"):
+        assert ficha[clave] is None
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor"),
+    [
+        ("marchamo_anio", 32_768),
+        ("bateria_kwh", 2_147_483_648),
+        ("autonomia_km", 2_147_483_648),
+        ("bateria_salud_pct", -1),
+        ("bateria_salud_pct", 101),
+    ],
+)
+def test_topes_de_datos_comerciales(admin, campo, valor):
+    combustible = Combustible.objects.get(nombre="Eléctrico").pk
+    res = admin.post(URL, datos_auto(combustible=combustible, **{campo: valor}), format="json")
+    assert res.status_code == 400
+    assert f"auto.{campo}" in res.json()["campos"]
+
+
+def test_datos_de_repuesto_y_motor_en_panel_y_ficha(admin):
+    from rest_framework.test import APIClient
+
+    datos = datos_repuesto()
+    datos["repuesto"].update(fabricante="Fabricante A", clasificacion="oem")
+    datos["repuesto"]["compatibilidades"][0]["motor_version"] = "1.8 L"
+    res = admin.post(URL, datos, format="json")
+    assert res.status_code == 201
+    id_articulo = res.json()["id"]
+    for respuesta in (res, APIClient().get(f"/api/v1/articulos/{id_articulo}/")):
+        repuesto = respuesta.json()["repuesto"]
+        assert repuesto["fabricante"] == "Fabricante A"
+        assert repuesto["clasificacion"] == "oem"
+        assert repuesto["compatibilidades"][0]["motor_version"] == "1.8 L"
+    invalido = admin.patch(
+        f"{URL}{id_articulo}/", {"repuesto": {"clasificacion": "otra"}}, format="json"
+    )
+    assert invalido.status_code == 400
+    editado = admin.patch(
+        f"{URL}{id_articulo}/",
+        {"repuesto": {"clasificacion": None, "fabricante": ""}},
+        format="json",
+    )
+    assert editado.status_code == 200
+    assert editado.json()["repuesto"]["clasificacion"] is None
+    assert editado.json()["repuesto"]["fabricante"] is None
+    assert editado.json()["repuesto"]["compatibilidades"][0]["motor_version"] == "1.8 L"

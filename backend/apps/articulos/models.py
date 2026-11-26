@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex, OpClass
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.db.models import Deferrable, F, Q
 from django.utils import timezone
@@ -32,6 +33,15 @@ class EstadoArticulo(models.TextChoices):
 class CondicionRepuesto(models.TextChoices):
     NUEVO = "nuevo", "Nuevo"
     USADO = "usado", "Usado"
+
+
+class ClasificacionRepuesto(models.TextChoices):
+    ORIGINAL = "original", "Original"
+    OEM = "oem", "OEM"
+    GENERICO = "generico", "Genérico"
+
+
+COMBUSTIBLES_CON_BATERIA = {"Eléctrico", "Híbrido enchufable"}
 
 
 class Procedencia(models.TextChoices):
@@ -133,6 +143,20 @@ class Auto(models.Model):
     estado_general = models.CharField(max_length=10, choices=EstadoGeneral.choices)
     # Solo el último dígito: en Costa Rica define el día de restricción vehicular.
     placa_termina_en = models.PositiveSmallIntegerField(null=True, blank=True)
+    # Los datos comerciales usan NULL para representar «sin dato», también en texto.
+    marchamo_anio = models.PositiveSmallIntegerField(null=True, blank=True)
+    traspaso_incluido = models.BooleanField(null=True, blank=True)
+    financiamiento = models.BooleanField(null=True, blank=True)
+    sin_gravamenes = models.BooleanField(null=True, blank=True)
+    historial_mantenimiento = models.CharField(max_length=250, null=True, blank=True)  # noqa: DJ001
+    historial_accidentes = models.CharField(max_length=250, null=True, blank=True)  # noqa: DJ001
+    garantia = models.CharField(max_length=250, null=True, blank=True)  # noqa: DJ001
+    bateria_kwh = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    bateria_salud_pct = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MaxValueValidator(100)]
+    )
+    autonomia_km = models.PositiveIntegerField(null=True, blank=True)
+    tipo_carga = models.CharField(max_length=80, null=True, blank=True)  # noqa: DJ001
     equipamiento = models.ManyToManyField(
         Equipamiento, through="AutoEquipamiento", related_name="autos", blank=True
     )
@@ -186,8 +210,12 @@ class Repuesto(models.Model):
     )
     condicion = models.CharField(max_length=10, choices=CondicionRepuesto.choices)
     cantidad = models.PositiveIntegerField(default=1)
-    codigo_interno = models.CharField(max_length=40, null=True, blank=True, unique=True)
+    codigo_interno = models.CharField(max_length=40, null=True, blank=True, unique=True)  # noqa: DJ001
     numero_parte = models.CharField(max_length=60, blank=True)
+    fabricante = models.CharField(max_length=80, null=True, blank=True)  # noqa: DJ001
+    clasificacion = models.CharField(  # noqa: DJ001
+        max_length=8, choices=ClasificacionRepuesto.choices, null=True, blank=True
+    )
 
     class Meta:
         db_table = "repuesto"
@@ -209,6 +237,7 @@ class Compatibilidad(models.Model):
     modelo = models.ForeignKey(Modelo, on_delete=models.PROTECT, related_name="compatibilidades")
     anio_desde = models.PositiveSmallIntegerField()
     anio_hasta = models.PositiveSmallIntegerField()
+    motor_version = models.CharField(max_length=80, null=True, blank=True)  # noqa: DJ001
 
     class Meta:
         db_table = "compatibilidad"

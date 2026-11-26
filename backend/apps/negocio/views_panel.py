@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from apps.comun.permisos import tiene_permiso
 from apps.comun.revalidacion import revalidar_al_confirmar
+from apps.comun.serializers import TextoOpcional
 from apps.cuentas.permisos import ARTICULOS_VER, CONFIGURACION_EDITAR
 
 from .models import ConfiguracionNegocio, HorarioAtencion
@@ -30,6 +31,11 @@ class ConfiguracionSerializer(serializers.Serializer):
     whatsapp = serializers.RegexField(r"^\d{8,15}$", error_messages={"invalid": WHATSAPP_INVALIDO})
     direccion = serializers.CharField(max_length=200)
     mapa_url = serializers.URLField(max_length=500, allow_blank=True, required=False)
+    garantia_repuestos = TextoOpcional(max_length=1000)
+    condiciones_devolucion = TextoOpcional(max_length=1000)
+    metodos_entrega = TextoOpcional(max_length=1000)
+    metodos_pago = TextoOpcional(max_length=1000)
+    condiciones_compra = TextoOpcional(max_length=1000)
     horarios = HorarioSerializer(many=True)
 
 

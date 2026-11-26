@@ -105,3 +105,36 @@ describe("configuración del negocio", () => {
     expect(screen.queryByRole("button", { name: "Guardar" })).not.toBeInTheDocument();
   });
 });
+
+it("carga y guarda las condiciones comerciales en Más datos", async () => {
+  const u = userEvent.setup();
+  let cuerpo: Record<string, unknown> | undefined;
+  servidor.use(
+    http.get("*/api/v1/panel/configuracion/", () =>
+      HttpResponse.json({
+        ...CONFIG,
+        garantia_repuestos: "Según la pieza",
+      }),
+    ),
+    http.put("*/api/v1/panel/configuracion/", async ({ request }) => {
+      cuerpo = (await request.json()) as Record<string, unknown>;
+      return HttpResponse.json(cuerpo);
+    }),
+  );
+  renderPanel(<PaginaConfiguracion />);
+  const resumen = await screen.findByText("Más datos");
+  expect(resumen.closest("details")).not.toHaveAttribute("open");
+  await u.click(resumen);
+  expect(screen.getByLabelText("Garantía general de repuestos")).toHaveValue("Según la pieza");
+  await u.type(screen.getByLabelText("Métodos de entrega"), "Retiro en el local");
+  await u.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() =>
+    expect(cuerpo).toMatchObject({
+      garantia_repuestos: "Según la pieza",
+      condiciones_devolucion: null,
+      metodos_entrega: "Retiro en el local",
+      metodos_pago: null,
+      condiciones_compra: null,
+    }),
+  );
+});

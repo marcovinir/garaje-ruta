@@ -1,5 +1,7 @@
 """Escrituras de artículos desde el panel. Cada una deja su línea en el historial."""
 
+from decimal import Decimal
+
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
@@ -49,8 +51,27 @@ CAMPOS_AUTO = [
     "precio_negociable",
     "estado_general",
     "placa_termina_en",
+    "marchamo_anio",
+    "traspaso_incluido",
+    "financiamiento",
+    "sin_gravamenes",
+    "historial_mantenimiento",
+    "historial_accidentes",
+    "garantia",
+    "bateria_kwh",
+    "bateria_salud_pct",
+    "autonomia_km",
+    "tipo_carga",
 ]
-CAMPOS_REPUESTO = ["categoria_pieza", "condicion", "cantidad", "codigo_interno", "numero_parte"]
+CAMPOS_REPUESTO = [
+    "categoria_pieza",
+    "condicion",
+    "cantidad",
+    "codigo_interno",
+    "numero_parte",
+    "fabricante",
+    "clasificacion",
+]
 CON_VENTAS = "Este artículo tiene ventas: ocultalo en lugar de borrarlo."
 
 
@@ -64,6 +85,8 @@ def _comparable(valor):
     """Valor legible y serializable a JSON para el historial."""
     if hasattr(valor, "_meta"):
         return str(valor)
+    if isinstance(valor, Decimal):
+        return float(valor)
     if hasattr(valor, "isoformat"):
         return valor.isoformat()
     return valor
@@ -79,7 +102,9 @@ def _estado_editable(articulo: Articulo) -> dict:
         repuesto = articulo.repuesto
         datos |= {c: getattr(repuesto, c) for c in CAMPOS_REPUESTO}
         datos["compatibilidades"] = sorted(
-            f"{c.modelo} {c.anio_desde}–{c.anio_hasta}" for c in repuesto.compatibilidades.all()
+            f"{c.modelo} {c.anio_desde}–{c.anio_hasta}"
+            + (f" · {c.motor_version}" if c.motor_version else "")
+            for c in repuesto.compatibilidades.all()
         )
     return {k: _comparable(v) for k, v in datos.items()}
 
@@ -166,7 +191,11 @@ def duplicar_articulo(articulo: Articulo, usuario) -> Articulo:
         nuevo = Repuesto.objects.create(articulo=copia, **campos)
         Compatibilidad.objects.bulk_create(
             Compatibilidad(
-                repuesto=nuevo, modelo=c.modelo, anio_desde=c.anio_desde, anio_hasta=c.anio_hasta
+                repuesto=nuevo,
+                modelo=c.modelo,
+                anio_desde=c.anio_desde,
+                anio_hasta=c.anio_hasta,
+                motor_version=c.motor_version,
             )
             for c in repuesto.compatibilidades.all()
         )

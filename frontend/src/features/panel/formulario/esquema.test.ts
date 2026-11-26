@@ -96,11 +96,59 @@ describe("esquema del formulario", () => {
       "repuesto.compatibilidades": "Agregá al menos una compatibilidad.",
     });
     v.repuesto.compatibilidades = [
-      { marca: "13", modelo: "40", anio_desde: "2016", anio_hasta: "2012" },
+      { marca: "13", modelo: "40", anio_desde: "2016", anio_hasta: "2012", motor_version: "" },
     ];
     expect(errores(v, "repuesto")).toEqual({
       "repuesto.compatibilidades.0.anio_hasta": "Tiene que ser igual o mayor que «desde».",
     });
+  });
+
+  it("respeta topes, distingue No de sin dato y admite coma decimal para kWh", () => {
+    const v = autoValido();
+    const esquema = esquemaArticulo("auto", CATALOGOS);
+    v.auto = {
+      ...v.auto,
+      combustible: "3",
+      marchamo_anio: "32768",
+      bateria_kwh: "2147483648",
+      autonomia_km: "2147483648",
+      bateria_salud_pct: "101",
+    };
+    const resultado = esquema.safeParse(v);
+    expect(resultado.success).toBe(false);
+    if (!resultado.success) {
+      expect(resultado.error.issues.map((error) => error.path.join("."))).toEqual(
+        expect.arrayContaining([
+          "auto.marchamo_anio",
+          "auto.bateria_kwh",
+          "auto.autonomia_km",
+          "auto.bateria_salud_pct",
+        ]),
+      );
+    }
+    v.auto = {
+      ...v.auto,
+      marchamo_anio: "",
+      bateria_kwh: "42,75",
+      autonomia_km: "2147483647",
+      bateria_salud_pct: "0",
+      traspaso_incluido: "no",
+      financiamiento: "si",
+    };
+    expect(esquema.safeParse(v).success).toBe(true);
+    expect(aEscritura(v, CATALOGOS).auto).toMatchObject({
+      marchamo_anio: null,
+      bateria_kwh: 42.75,
+      autonomia_km: 2147483647,
+      bateria_salud_pct: 0,
+      traspaso_incluido: false,
+      financiamiento: true,
+      sin_gravamenes: null,
+    });
+    v.auto.combustible = "5";
+    v.auto.bateria_salud_pct = "101";
+    expect(esquema.safeParse(v).success).toBe(true);
+    expect(aEscritura(v, CATALOGOS).auto).not.toHaveProperty("bateria_salud_pct");
   });
 
   it("desdeDetalle reconstruye la marca a partir del modelo", () => {
@@ -128,7 +176,7 @@ describe("esquema del formulario", () => {
     };
     const v = desdeDetalle(detalle, CATALOGOS);
     expect(v.repuesto.compatibilidades).toEqual([
-      { marca: "15", modelo: "55", anio_desde: "2010", anio_hasta: "2014" },
+      { marca: "15", modelo: "55", anio_desde: "2010", anio_hasta: "2014", motor_version: "" },
     ]);
     expect(v.repuesto.codigo_interno).toBe("");
     expect(v.precio_colones).toBe("25000");

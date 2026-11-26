@@ -12,6 +12,11 @@ def configuracion_json(config: ConfiguracionNegocio) -> dict:
         "whatsapp": config.whatsapp,
         "direccion": config.direccion,
         "mapa_url": config.mapa_url,
+        "garantia_repuestos": config.garantia_repuestos,
+        "condiciones_devolucion": config.condiciones_devolucion,
+        "metodos_entrega": config.metodos_entrega,
+        "metodos_pago": config.metodos_pago,
+        "condiciones_compra": config.condiciones_compra,
         "horarios": [
             {
                 "dia_semana": h.dia_semana,

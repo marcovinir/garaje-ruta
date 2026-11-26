@@ -4,6 +4,7 @@ import { get, useFieldArray, useFormContext, useWatch } from "react-hook-form";
 
 import type { Catalogos } from "@/shared/api/tipos";
 
+import { MasDatos } from "../ui/MasDatos";
 import { BOTON_SECUNDARIO, BOTON_TENUE } from "../ui/estilos";
 import { BotonAgregarCatalogo, aplanarCategorias } from "./BotonAgregarCatalogo";
 import {
@@ -15,7 +16,7 @@ import {
   REJILLA,
   Seccion,
 } from "./campos";
-import { compatibilidadVacia, type ValoresFormulario } from "./esquema";
+import { admiteDatosBateria, compatibilidadVacia, type ValoresFormulario } from "./esquema";
 
 const aOpciones = (lista: { id: number; nombre: string }[]): Opcion[] =>
   [...lista]
@@ -153,7 +154,68 @@ export function SeccionAuto({ catalogos }: { catalogos: Catalogos }) {
         </div>
       </Seccion>
       <Equipamiento catalogos={catalogos} />
+      <MasDatosAuto catalogos={catalogos} />
     </>
+  );
+}
+
+const SI_NO = [
+  { valor: "si", texto: "Sí" },
+  { valor: "no", texto: "No" },
+];
+
+function MasDatosAuto({ catalogos }: { catalogos: Catalogos }) {
+  const combustible = useWatch<ValoresFormulario, "auto.combustible">({ name: "auto.combustible" });
+  const {
+    formState: { errors },
+  } = useFormContext<ValoresFormulario>();
+  const bateria = admiteDatosBateria(catalogos, combustible);
+  const campos = [
+    "marchamo_anio",
+    "traspaso_incluido",
+    "financiamiento",
+    "sin_gravamenes",
+    "historial_mantenimiento",
+    "historial_accidentes",
+    "garantia",
+    "bateria_kwh",
+    "bateria_salud_pct",
+    "autonomia_km",
+    "tipo_carga",
+  ];
+  return (
+    <MasDatos conErrores={campos.some((campo) => Boolean(get(errors, `auto.${campo}`)))}>
+      <CampoTexto nombre="auto.marchamo_anio" etiqueta="Año del marchamo pagado" numerico />
+      <CampoSeleccion
+        nombre="auto.traspaso_incluido"
+        etiqueta="Traspaso incluido"
+        opciones={SI_NO}
+        vacio="Sin dato"
+      />
+      <CampoSeleccion
+        nombre="auto.financiamiento"
+        etiqueta="Financiamiento"
+        opciones={SI_NO}
+        vacio="Sin dato"
+      />
+      <CampoSeleccion
+        nombre="auto.sin_gravamenes"
+        etiqueta="Sin gravámenes"
+        opciones={SI_NO}
+        vacio="Sin dato"
+      />
+      <CampoTexto nombre="auto.historial_mantenimiento" etiqueta="Historial de mantenimiento" />
+      <CampoTexto nombre="auto.historial_accidentes" etiqueta="Historial de accidentes" />
+      <CampoTexto nombre="auto.garantia" etiqueta="Garantía" />
+      {bateria ? (
+        <>
+          <CampoTexto nombre="auto.bateria_kwh" etiqueta="Capacidad de la batería (kWh)" decimal />
+          <CampoTexto nombre="auto.bateria_salud_pct" etiqueta="Salud de la batería (%)" numerico />
+          <CampoTexto nombre="auto.autonomia_km" etiqueta="Autonomía (km)" numerico />
+          <CampoTexto nombre="auto.tipo_carga" etiqueta="Tipo de carga" />
+        </>
+      ) : null}
+    </MasDatos>
   );
 }
 
@@ -298,27 +360,56 @@ function Compatibilidades({ catalogos }: { catalogos: Catalogos }) {
     (get(errors, "repuesto.compatibilidades") as { message?: string } | undefined)?.message ??
     (get(errors, "repuesto.compatibilidades.root") as { message?: string } | undefined)?.message;
   return (
-    <Seccion titulo="Compatible con">
-      {fields.map((campo, i) => (
-        <FilaCompatibilidad
-          key={campo.id}
-          indice={i}
-          catalogos={catalogos}
-          alQuitar={() => remove(i)}
-        />
-      ))}
-      {error ? (
-        <p role="alert" className="text-rojo-oscuro font-semibold">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="button"
-        onClick={() => append(compatibilidadVacia())}
-        className={`${BOTON_SECUNDARIO} self-start`}
+    <>
+      <Seccion titulo="Compatible con">
+        {fields.map((campo, i) => (
+          <FilaCompatibilidad
+            key={campo.id}
+            indice={i}
+            catalogos={catalogos}
+            alQuitar={() => remove(i)}
+          />
+        ))}
+        {error ? (
+          <p role="alert" className="text-rojo-oscuro font-semibold">
+            {error}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => append(compatibilidadVacia())}
+          className={`${BOTON_SECUNDARIO} self-start`}
+        >
+          Agregar compatibilidad
+        </button>
+      </Seccion>
+      <MasDatos
+        conErrores={Boolean(
+          errors.repuesto?.fabricante ||
+          errors.repuesto?.clasificacion ||
+          fields.some((_, i) => get(errors, `repuesto.compatibilidades.${i}.motor_version`)),
+        )}
       >
-        Agregar compatibilidad
-      </button>
-    </Seccion>
+        <CampoTexto nombre="repuesto.fabricante" etiqueta="Fabricante" />
+        <CampoSeleccion
+          nombre="repuesto.clasificacion"
+          etiqueta="Clasificación"
+          vacio="Sin dato"
+          opciones={[
+            { valor: "original", texto: "Original" },
+            { valor: "oem", texto: "OEM" },
+            { valor: "generico", texto: "Genérico" },
+          ]}
+        />
+        {fields.map((campo, i) => (
+          <CampoTexto
+            key={campo.id}
+            nombre={`repuesto.compatibilidades.${i}.motor_version`}
+            etiqueta={`Motor o versión (compatibilidad ${i + 1})`}
+            placeholder="Ej.: 1.8 L"
+          />
+        ))}
+      </MasDatos>
+    </>
   );
 }

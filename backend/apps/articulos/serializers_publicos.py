@@ -3,7 +3,7 @@
 from django.db.models import Sum
 from rest_framework import serializers
 
-from .models import Articulo, TipoArticulo
+from .models import COMBUSTIBLES_CON_BATERIA, Articulo, TipoArticulo
 from .presentacion import precio_usd, ruta_publica
 
 
@@ -117,6 +117,7 @@ class FichaSerializer(TarjetaSerializer):
         if articulo.tipo != TipoArticulo.AUTO:
             return None
         a = articulo.auto
+        con_bateria = a.combustible.nombre in COMBUSTIBLES_CON_BATERIA
         return {
             "marca": a.modelo.marca.nombre,
             "modelo": a.modelo.nombre,
@@ -143,6 +144,17 @@ class FichaSerializer(TarjetaSerializer):
             "estado_general": a.estado_general,
             "placa_termina_en": a.placa_termina_en,
             "equipamiento": equipamiento_agrupado(a),
+            "marchamo_anio": a.marchamo_anio,
+            "traspaso_incluido": a.traspaso_incluido,
+            "financiamiento": a.financiamiento,
+            "sin_gravamenes": a.sin_gravamenes,
+            "historial_mantenimiento": a.historial_mantenimiento,
+            "historial_accidentes": a.historial_accidentes,
+            "garantia": a.garantia,
+            "bateria_kwh": a.bateria_kwh if con_bateria else None,
+            "bateria_salud_pct": a.bateria_salud_pct if con_bateria else None,
+            "autonomia_km": a.autonomia_km if con_bateria else None,
+            "tipo_carga": a.tipo_carga if con_bateria else None,
         }
 
     def get_repuesto(self, articulo: Articulo) -> dict | None:
@@ -158,12 +170,15 @@ class FichaSerializer(TarjetaSerializer):
             },
             "cantidad": r.cantidad,
             "numero_parte": r.numero_parte,
+            "fabricante": r.fabricante,
+            "clasificacion": r.clasificacion,
             "compatibilidades": [
                 {
                     "marca": c.modelo.marca.nombre,
                     "modelo": c.modelo.nombre,
                     "anio_desde": c.anio_desde,
                     "anio_hasta": c.anio_hasta,
+                    "motor_version": c.motor_version,
                 }
                 for c in sorted(
                     r.compatibilidades.all(), key=lambda c: (c.anio_desde, c.modelo.nombre)

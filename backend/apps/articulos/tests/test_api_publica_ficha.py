@@ -42,7 +42,13 @@ def test_ficha_de_repuesto(db):
     assert rep["cantidad"] == 2
     assert rep["numero_parte"] == "27060-0D010"
     assert rep["compatibilidades"] == [
-        {"marca": "Toyota", "modelo": "Corolla", "anio_desde": 2012, "anio_hasta": 2016}
+        {
+            "marca": "Toyota",
+            "modelo": "Corolla",
+            "anio_desde": 2012,
+            "anio_hasta": 2016,
+            "motor_version": None,
+        }
     ]
     assert rep["categoria"] == {"nombre": "Sistema eléctrico", "padre": None}
 
