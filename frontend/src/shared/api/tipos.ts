@@ -145,7 +145,12 @@ export type CondicionesComerciales = {
   condiciones_compra?: string | null;
 };
 
+export type PreguntaFrecuente = { pregunta: string; respuesta: string };
+export type RedSocial = { red: string; url: string };
+
 export type Configuracion = CondicionesComerciales & {
+  preguntas_frecuentes?: PreguntaFrecuente[];
+  redes_sociales?: RedSocial[];
   nombre: string;
   logo_public_id: string;
   whatsapp: string;

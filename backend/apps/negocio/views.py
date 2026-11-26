@@ -17,6 +17,8 @@ def configuracion_json(config: ConfiguracionNegocio) -> dict:
         "metodos_entrega": config.metodos_entrega,
         "metodos_pago": config.metodos_pago,
         "condiciones_compra": config.condiciones_compra,
+        "preguntas_frecuentes": config.preguntas_frecuentes,
+        "redes_sociales": config.redes_sociales,
         "horarios": [
             {
                 "dia_semana": h.dia_semana,

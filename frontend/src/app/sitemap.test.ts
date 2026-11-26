@@ -21,14 +21,15 @@ describe("sitemap y robots", () => {
       "https://garaje.example/",
       "https://garaje.example/autos",
       "https://garaje.example/repuestos",
+      "https://garaje.example/contacto",
       "https://garaje.example/autos/kia-rio-2018-3",
     ]);
-    expect(entradas[3].lastModified).toEqual(new Date("2026-11-20T10:00:00-06:00"));
+    expect(entradas[4].lastModified).toEqual(new Date("2026-11-20T10:00:00-06:00"));
   });
 
   it("si Django falla, el sitemap trae al menos las páginas fijas", async () => {
     vi.mocked(datos.obtenerSitemap).mockRejectedValue(new Error("caído"));
-    expect(await sitemap()).toHaveLength(3);
+    expect(await sitemap()).toHaveLength(4);
   });
 
   it("robots permite todo salvo la API y enlaza el sitemap", () => {

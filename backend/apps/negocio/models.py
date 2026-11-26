@@ -17,6 +17,9 @@ class ConfiguracionNegocio(models.Model):
     metodos_pago = models.TextField(max_length=1000, null=True, blank=True)  # noqa: DJ001
     condiciones_compra = models.TextField(max_length=1000, null=True, blank=True)  # noqa: DJ001
 
+    preguntas_frecuentes = models.JSONField(default=list, blank=True)
+    redes_sociales = models.JSONField(default=list, blank=True)
+
     class Meta:
         db_table = "configuracion_negocio"
         verbose_name = "configuración del negocio"

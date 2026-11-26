@@ -1,3 +1,4 @@
+from django.core.validators import URLValidator
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.response import Response
@@ -25,6 +26,18 @@ class HorarioSerializer(serializers.Serializer):
         return datos
 
 
+class PreguntaFrecuenteSerializer(serializers.Serializer):
+    pregunta = serializers.CharField(max_length=160)
+    respuesta = serializers.CharField(max_length=1000)
+
+
+class RedSocialSerializer(serializers.Serializer):
+    red = serializers.CharField(max_length=60)
+    url = serializers.CharField(
+        max_length=500, validators=[URLValidator(schemes=["http", "https"])]
+    )
+
+
 class ConfiguracionSerializer(serializers.Serializer):
     nombre = serializers.CharField(max_length=80)
     logo_public_id = serializers.CharField(max_length=255, allow_blank=True, required=False)
@@ -37,6 +50,8 @@ class ConfiguracionSerializer(serializers.Serializer):
     metodos_pago = TextoOpcional(max_length=1000)
     condiciones_compra = TextoOpcional(max_length=1000)
     horarios = HorarioSerializer(many=True)
+    preguntas_frecuentes = PreguntaFrecuenteSerializer(many=True, required=False, max_length=20)
+    redes_sociales = RedSocialSerializer(many=True, required=False, max_length=20)
 
 
 @transaction.atomic
