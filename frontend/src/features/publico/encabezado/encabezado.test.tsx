@@ -47,13 +47,12 @@ describe("encabezado público (#115)", () => {
     );
   });
 
-  it("Contacto lleva al pie de la página actual", () => {
-    irA("/repuestos");
+  it("Contacto lleva a la página /contacto y la marca como actual", () => {
+    irA("/contacto");
     render(<Encabezado />);
-    expect(within(principal()).getByRole("link", { name: "Contacto" })).toHaveAttribute(
-      "href",
-      "#contacto",
-    );
+    const contacto = within(principal()).getByRole("link", { name: "Contacto" });
+    expect(contacto).toHaveAttribute("href", "/contacto");
+    expect(contacto).toHaveAttribute("aria-current", "page");
   });
 
   it("el celular tiene accesos a Autos, Repuestos y Ofertas", () => {
