@@ -4,14 +4,17 @@ import { Suspense } from "react";
 import { Encabezado } from "@/features/publico/encabezado/Encabezado";
 import { PieDePagina } from "@/features/publico/componentes/PieDePagina";
 import { WhatsappFlotante } from "@/features/publico/componentes/WhatsappFlotante";
-import { obtenerConfiguracion } from "@/shared/api/datos";
+import { obtenerConfiguracion, obtenerTipoCambio } from "@/shared/api/datos";
 
 async function Pie() {
   await connection();
-  const configuracion = await obtenerConfiguracion().catch(() => null);
+  const [configuracion, tipoCambio] = await Promise.all([
+    obtenerConfiguracion().catch(() => null),
+    obtenerTipoCambio().catch(() => null),
+  ]);
   return (
     <>
-      <PieDePagina configuracion={configuracion} />
+      <PieDePagina configuracion={configuracion} tipoCambio={tipoCambio} />
       {configuracion ? <WhatsappFlotante numero={configuracion.whatsapp} /> : null}
     </>
   );
