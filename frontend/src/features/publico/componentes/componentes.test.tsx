@@ -112,6 +112,32 @@ describe("otros componentes", () => {
     expect(screen.getByText("Reservado")).toBeInTheDocument();
   });
 
+  it("el pie explica el tipo de cambio y que los dólares van redondeados (#138)", () => {
+    render(
+      <PieDePagina
+        configuracion={null}
+        tipoCambio={{
+          fecha: "2026-11-25",
+          compra: "446.59",
+          venta: "446.59",
+          fuente: "open.er-api.com",
+          desactualizado: false,
+        }}
+      />,
+    );
+    const nota = screen.getByText(/Precios en dólares aproximados/);
+    expect(nota).toHaveTextContent(
+      "Precios en dólares aproximados, redondeados a la decena, con un tipo de cambio de referencia de ₡446,59 por dólar (25 nov 2026).",
+    );
+    expect(screen.getByRole("link", { name: "Rates By Exchange Rate API" })).toBeInTheDocument();
+  });
+
+  it("sin tipo de cambio el pie solo cita la fuente", () => {
+    render(<PieDePagina configuracion={null} tipoCambio={null} />);
+    expect(screen.queryByText(/Precios en dólares aproximados/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Rates By Exchange Rate API" })).toBeInTheDocument();
+  });
+
   it("el pie (#contacto) deja lugar para el encabezado fijo al llegar desde «Contacto»", () => {
     const { container } = render(<PieDePagina configuracion={null} />);
     const pie = container.querySelector("footer#contacto");

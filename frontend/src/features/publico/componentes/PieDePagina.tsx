@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import type { Configuracion } from "@/shared/api/tipos";
+import type { Configuracion, TipoCambio } from "@/shared/api/tipos";
 import { enlaceWhatsappGeneral } from "@/shared/lib/whatsapp";
 
 import { IconoWhatsapp } from "./BotonWhatsapp";
@@ -27,7 +27,26 @@ export function resumirHorarios(horarios: Configuracion["horarios"]): string[] {
   });
 }
 
-export function PieDePagina({ configuracion }: { configuracion: Configuracion | null }) {
+const TIPO = new Intl.NumberFormat("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const FECHA = new Intl.DateTimeFormat("es-CR", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** «25 nov 2026» (sin el punto que agrega Intl a la abreviatura del mes). */
+function fechaCorta(fecha: string): string {
+  return FECHA.format(new Date(`${fecha}T00:00:00Z`)).replace(".", "");
+}
+
+export function PieDePagina({
+  configuracion,
+  tipoCambio = null,
+}: {
+  configuracion: Configuracion | null;
+  tipoCambio?: TipoCambio | null;
+}) {
   return (
     <footer id="contacto" className="bg-tarjeta border-borde mt-auto scroll-mt-36 border-t">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
@@ -83,7 +102,10 @@ export function PieDePagina({ configuracion }: { configuracion: Configuracion | 
             <p className="text-tinta-suave">{configuracion?.direccion ?? "Heredia, Costa Rica"}</p>
           )}
           <p className="text-tinta-suave text-xs">
-            Tipo de cambio:{" "}
+            {tipoCambio
+              ? `Precios en dólares aproximados, redondeados a la decena, con un tipo de cambio de referencia de ₡${TIPO.format(Number(tipoCambio.venta))} por dólar (${fechaCorta(tipoCambio.fecha)}). `
+              : null}
+            Fuente:{" "}
             <a
               href="https://www.exchangerate-api.com"
               target="_blank"

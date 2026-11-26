@@ -3,7 +3,15 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { pedir, pedirOpcional } from "./servidor";
-import type { Catalogos, Configuracion, EntradaSitemap, Ficha, Pagina, Tarjeta } from "./tipos";
+import type {
+  Catalogos,
+  Configuracion,
+  EntradaSitemap,
+  Ficha,
+  Pagina,
+  Tarjeta,
+  TipoCambio,
+} from "./tipos";
 
 /**
  * Lecturas cacheadas. Las etiquetas son las que Django revalida
@@ -56,6 +64,17 @@ export async function obtenerConfiguracion(): Promise<Configuracion> {
   cacheTag("configuracion");
   cacheLife("hours");
   return pedir("/api/v1/configuracion/");
+}
+
+/**
+ * El tipo de cambio con el que Django calcula los dólares. Misma etiqueta que los artículos:
+ * cuando cambia, se revalidan juntos y la nota del pie coincide con los precios.
+ */
+export async function obtenerTipoCambio(): Promise<TipoCambio | null> {
+  "use cache";
+  cacheTag("articulos");
+  cacheLife("hours");
+  return pedirOpcional("/api/v1/tipo-cambio/");
 }
 
 export async function obtenerSitemap(): Promise<EntradaSitemap[]> {
