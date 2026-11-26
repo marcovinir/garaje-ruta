@@ -74,7 +74,12 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "apps.comun.errores.manejador_excepciones",
     "DEFAULT_THROTTLE_CLASSES": ["apps.comun.throttles.LimitePorAlcance"],
-    "DEFAULT_THROTTLE_RATES": {"login": "10/min", "publico": "120/min", "vistas": "30/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/min",
+        "publico": "120/min",
+        "vistas": "30/min",
+        "eventos": "600/min",
+    },
 }
 
 SESSION_COOKIE_HTTPONLY = True

@@ -1,9 +1,11 @@
+import type { AccionWhatsapp } from "@/shared/lib/eventos";
 import { enlaceWhatsapp } from "@/shared/lib/whatsapp";
 
 type Props = ({ enlace: string } | { numero: string; titulo: string; url: string }) & {
   texto?: string;
   className?: string;
   secundario?: boolean;
+  accion?: AccionWhatsapp;
 };
 
 /** Ícono de WhatsApp (Simple Icons, CC0), relleno con el color del texto. */
@@ -25,6 +27,7 @@ export function BotonWhatsapp(props: Props) {
   return (
     <a
       href={enlace}
+      data-accion-whatsapp={props.accion}
       target="_blank"
       rel="noopener noreferrer"
       className={`${colores} flex min-h-13 items-center justify-center gap-2.5 rounded-xl px-5 font-bold ${className}`}

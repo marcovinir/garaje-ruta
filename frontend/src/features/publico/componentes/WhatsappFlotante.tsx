@@ -29,6 +29,7 @@ export function WhatsappFlotante({ numero }: { numero: string }) {
   return (
     <a
       href={enlaceWhatsappGeneral(numero)}
+      data-origen-whatsapp="flotante"
       onClick={completar}
       onFocus={completar}
       onMouseEnter={completar}

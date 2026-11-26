@@ -77,10 +77,34 @@ describe("ContadorVistas", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("registra una sola vista por artículo y sesión", () => {
-    const { unmount } = render(<ContadorVistas id={7} />);
+    const { unmount } = render(<ContadorVistas id={7} tipo="auto" />);
     unmount();
-    render(<ContadorVistas id={7} />);
-    expect(fetch).toHaveBeenCalledTimes(1);
+    render(<ContadorVistas id={7} tipo="auto" />);
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([ruta]) => ruta === "/api/v1/vistas/7"),
+    ).toHaveLength(1);
     expect(fetch).toHaveBeenCalledWith("/api/v1/vistas/7", { method: "POST", keepalive: true });
   });
+});
+
+it("registra las dos fichas además del contador de sesión", () => {
+  sessionStorage.setItem("vista-7", "1");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+  try {
+    const { rerender } = render(<ContadorVistas id={7} tipo="auto" />);
+    rerender(<ContadorVistas id={8} tipo="repuesto" />);
+    const llamadas = vi.mocked(fetch).mock.calls;
+    const eventos = llamadas
+      .filter(([ruta]) => ruta === "/api/v1/eventos/")
+      .map(([, opciones]) => JSON.parse(opciones?.body as string));
+    expect(eventos.map(({ tipo, articulo }) => [tipo, articulo])).toEqual([
+      ["vehicle_view", 7],
+      ["part_view", 8],
+    ]);
+    expect(llamadas.filter(([ruta]) => ruta === "/api/v1/vistas/7")).toHaveLength(0);
+    expect(llamadas.filter(([ruta]) => ruta === "/api/v1/vistas/8")).toHaveLength(1);
+  } finally {
+    sessionStorage.clear();
+    vi.unstubAllGlobals();
+  }
 });

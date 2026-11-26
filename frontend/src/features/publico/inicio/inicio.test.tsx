@@ -5,7 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Tarjeta } from "@/shared/api/tipos";
 import { CATALOGOS } from "@/test/datos";
 
-const { navegar } = vi.hoisted(() => ({ navegar: vi.fn() }));
+const { navegar, registrarEvento } = vi.hoisted(() => ({
+  navegar: vi.fn(),
+  registrarEvento: vi.fn(),
+}));
+vi.mock("@/shared/lib/eventos", async (importar) => ({
+  ...(await importar<typeof import("@/shared/lib/eventos")>()),
+  registrarEvento,
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: navegar }) }));
 vi.mock("next/server", () => ({ connection: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/shared/api/datos", () => ({
@@ -143,6 +150,13 @@ describe("inicio", () => {
     await u.selectOptions(modelo(), "55");
     await u.type(form.getByLabelText("Año"), "2018");
     await u.click(form.getByRole("button", { name: "Buscar repuestos compatibles" }));
+    expect(registrarEvento).toHaveBeenCalledWith("filter_applied", {
+      contexto: {
+        pagina: "inicio",
+        seccion: "compatibilidad",
+        filtros: ["compatible_marca", "compatible_modelo", "compatible_anio"],
+      },
+    });
     expect(navegar).toHaveBeenCalledWith(
       "/repuestos?compatible_marca=15&compatible_modelo=55&compatible_anio=2018",
     );

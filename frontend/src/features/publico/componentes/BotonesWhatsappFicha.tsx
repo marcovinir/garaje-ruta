@@ -28,6 +28,7 @@ export function BotonesWhatsappFicha(props: Props) {
   const botonSecundario = (
     <BotonWhatsapp
       enlace={secundario}
+      accion={props.tipo === "auto" ? "visit_request" : "compatibility_request"}
       texto={props.tipo === "auto" ? "Agendar una visita" : "Confirmar compatibilidad"}
       secundario
     />
