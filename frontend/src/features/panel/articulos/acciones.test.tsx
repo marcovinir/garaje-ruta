@@ -243,7 +243,7 @@ describe("acciones rápidas", () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/panel/articulos/777"));
   });
 
-  it("el colaborador no puede eliminar y el demo no ve acciones", async () => {
+  it("el colaborador no puede eliminar y el demo solo puede sacar el texto para Marketplace", async () => {
     const { unmount } = renderPanel(<PaginaArticulos />, { usuario: "colaborador" });
     const card = await tarjeta("Toyota Corolla 2015");
     await abrirMas(card);
@@ -251,9 +251,12 @@ describe("acciones rápidas", () => {
     unmount();
     renderPanel(<PaginaArticulos />, { usuario: "demo" });
     const tarjetaDemo = await tarjeta("Toyota Corolla 2015");
+    await abrirMas(tarjetaDemo);
     expect(
-      within(tarjetaDemo).queryByRole("button", { name: "Más acciones" }),
-    ).not.toBeInTheDocument();
+      within(tarjetaDemo)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual(["Texto para Marketplace"]);
     expect(within(tarjetaDemo).queryByRole("button", { name: "Vendido" })).not.toBeInTheDocument();
   });
 });

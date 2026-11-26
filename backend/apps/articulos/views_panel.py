@@ -18,6 +18,7 @@ from apps.cuentas.permisos import (
 
 from . import services
 from .fotos import obtener_almacen
+from .marketplace import texto_marketplace
 from .models import Articulo, EstadoArticulo, TipoArticulo
 from .selectors import articulo_con_relaciones
 from .serializers_panel import (
@@ -145,6 +146,11 @@ class ArticuloPanelViewSet(
             articulo, request.user, entrada.validated_data.get("venta_id")
         )
         return Response(self._fila(articulo))
+
+    @action(detail=True, methods=["get"])
+    def marketplace(self, request, pk=None):
+        """Casillas y descripción para Facebook Marketplace (se pegan a mano)."""
+        return Response(texto_marketplace(self.get_object()))
 
     @action(detail=True, methods=["put"])
     def fotos(self, request, pk=None):

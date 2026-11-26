@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { EtiquetaEstado } from "@/features/publico/componentes/EtiquetaEstado";
 import { ApiError } from "@/shared/api/navegador";
 
 import { useSesion } from "../auth/useSesion";
 import { rutaPanel } from "../rutaPanel";
+import { DialogoMarketplace } from "../articulos/DialogoMarketplace";
 import { RequierePermiso } from "../estructura/RequierePermiso";
 import { EncabezadoPagina } from "../ui/EncabezadoPagina";
 import { BOTON_SECUNDARIO, TARJETA } from "../ui/estilos";
@@ -15,6 +17,7 @@ import { FormularioArticulo } from "./FormularioArticulo";
 
 function Contenido({ id }: { id: number }) {
   const { puede } = useSesion();
+  const [marketplace, setMarketplace] = useState(false);
   const detalle = useDetalle(id);
   const catalogos = useCatalogos();
 
@@ -54,6 +57,9 @@ function Contenido({ id }: { id: number }) {
         acciones={
           <>
             <EtiquetaEstado estado={d.estado} />
+            <button type="button" className={BOTON_SECUNDARIO} onClick={() => setMarketplace(true)}>
+              Texto para Marketplace
+            </button>
             {puede("historial.ver") && (
               <Link href={rutaPanel("historial?articulo=" + d.id)} className={BOTON_SECUNDARIO}>
                 Ver historial
@@ -61,6 +67,11 @@ function Contenido({ id }: { id: number }) {
             )}
           </>
         }
+      />
+      <DialogoMarketplace
+        id={marketplace ? d.id : null}
+        titulo={d.titulo}
+        alCerrar={() => setMarketplace(false)}
       />
       <FormularioArticulo key={d.id} tipo={d.tipo} catalogos={catalogos.data} detalle={d} />
     </>

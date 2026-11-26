@@ -16,3 +16,11 @@ export function urlFoto(
   if (recorte) partes.push("c_fill");
   return `https://res.cloudinary.com/${nube}/image/upload/${partes.join(",")}/${publicId}`;
 }
+
+/** JPG grande que el navegador descarga (fl_attachment) en vez de abrirlo: para subir a redes. */
+export function urlDescarga(publicId: string, nombre: string): string {
+  const nube = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD;
+  if (!nube) return FOTO_PENDIENTE;
+  const partes = [`fl_attachment:${nombre}`, "f_jpg", "q_auto:good", "w_1600", "c_limit"];
+  return `https://res.cloudinary.com/${nube}/image/upload/${partes.join(",")}/${publicId}`;
+}

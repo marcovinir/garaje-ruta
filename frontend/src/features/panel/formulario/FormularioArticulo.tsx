@@ -96,7 +96,17 @@ export function FormularioArticulo({ tipo, catalogos, detalle }: Props) {
         router.push(rutaPanel(`articulos/${articulo.id}`));
         return;
       }
-      avisar(`Guardado: ${articulo.titulo}`);
+      avisar(
+        `Guardado: ${articulo.titulo}`,
+        detalle
+          ? undefined
+          : {
+              accion: {
+                etiqueta: "Texto para Marketplace",
+                alHacer: () => router.push(rutaPanel(`articulos?marketplace=${articulo.id}`)),
+              },
+            },
+      );
       router.push(rutaPanel("articulos"));
     },
     onError: (error) => {
