@@ -86,13 +86,13 @@ export function ChipsFiltros({ base, filtros, catalogos }: Props) {
   return (
     <ul aria-label="Filtros aplicados" className="flex flex-wrap items-center gap-2">
       {chips.map((chip) => (
-        <li key={chip.href}>
+        <li key={chip.href} className="max-w-full min-w-0">
           <Link
             href={chip.href}
             aria-label={`Quitar filtro ${chip.etiqueta}`}
             className="bg-rojo-suave text-rojo-oscuro hover:bg-rojo inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold hover:text-white"
           >
-            {chip.etiqueta}
+            <span className="min-w-0 break-words">{chip.etiqueta}</span>
             <span aria-hidden="true">×</span>
           </Link>
         </li>

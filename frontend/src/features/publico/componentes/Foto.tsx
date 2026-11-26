@@ -22,7 +22,8 @@ export function Foto({ foto, alt, sizes, prioridad = false, className = "" }: Pr
       width={foto?.ancho ?? 400}
       height={foto ? Math.round((foto.ancho * 3) / 4) : 300}
       sizes={sizes}
-      priority={prioridad}
+      loading={prioridad ? "eager" : "lazy"}
+      fetchPriority={prioridad ? "high" : undefined}
       className={`aspect-[4/3] w-full object-cover ${className}`}
     />
   );

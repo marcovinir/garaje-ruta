@@ -67,7 +67,7 @@ async function Resultados({
       </aside>
       <div className="flex min-w-0 flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p role="status" className="font-semibold">
+          <p role="status" className="min-w-0 font-semibold break-words">
             {cantidad(pagina.count, tipo)}
             {filtros.q ? ` para «${filtros.q}»` : ""}
           </p>
@@ -90,7 +90,7 @@ async function Resultados({
         {pagina.results.length ? (
           <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {pagina.results.map((t, i) => (
-              <li key={t.id} className="grid">
+              <li key={t.id} className="grid min-w-0">
                 <TarjetaArticulo tarjeta={t} prioridad={i === 0} />
               </li>
             ))}
@@ -102,7 +102,7 @@ async function Resultados({
                 <p className="titulo text-2xl">Esa página no existe</p>
                 <Link
                   href={hrefSin(base, filtros, "page")}
-                  className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
+                  className="text-rojo-oscuro inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline"
                 >
                   Ir a la primera página →
                 </Link>
@@ -115,7 +115,7 @@ async function Resultados({
                 </p>
                 <Link
                   href={base}
-                  className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
+                  className="text-rojo-oscuro inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline"
                 >
                   Ver todos los {NOMBRES[tipo][1]} →
                 </Link>

@@ -125,6 +125,10 @@ def test_listado_serializa_tarjetas_sin_consultas_por_articulo(db, django_assert
         )
     with django_assert_num_queries(5):
         segunda = cliente.get("/api/v1/articulos/").json()
+    with django_assert_num_queries(5):
+        filtrada = cliente.get("/api/v1/articulos/", {"tipo": "repuesto"}).json()
+    assert len(filtrada["results"]) == 5
+    assert all(t["repuesto"]["compatibilidad_resumen"] for t in filtrada["results"])
     assert len(primera["results"]) == 2
     assert len(segunda["results"]) == 10
     assert all(t["auto"]["nombre_vehiculo"] == "Mazda 3" for t in segunda["results"] if t["auto"])

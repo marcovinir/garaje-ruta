@@ -21,12 +21,14 @@ function Seccion({
   plural,
   q,
   pagina,
+  priorizar,
 }: {
   titulo: string;
   base: string;
   plural: string;
   q: string;
   pagina: Pagina<Tarjeta>;
+  priorizar: boolean;
 }) {
   if (!pagina.results.length) return null;
   const id = `resultados-${plural}`;
@@ -39,16 +41,16 @@ function Seccion({
         {pagina.count > pagina.results.slice(0, MAXIMO).length ? (
           <Link
             href={`${base}${aQueryString({ q })}`}
-            className="text-rojo-oscuro font-semibold underline-offset-4 hover:underline"
+            className="text-rojo-oscuro inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline"
           >
             Ver los {pagina.count} {plural} →
           </Link>
         ) : null}
       </div>
       <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {pagina.results.slice(0, MAXIMO).map((t) => (
-          <li key={t.id} className="grid">
-            <TarjetaArticulo tarjeta={t} />
+        {pagina.results.slice(0, MAXIMO).map((t, indice) => (
+          <li key={t.id} className="grid min-w-0">
+            <TarjetaArticulo tarjeta={t} prioridad={priorizar && indice === 0} />
           </li>
         ))}
       </ul>
@@ -60,7 +62,12 @@ export async function ResultadosBusqueda({ searchParams }: { searchParams: Promi
   // La búsqueda acepta los mismos parámetros que cualquier listado; aquí solo importa `q`.
   const q = filtrosDesdeUrl(await searchParams, "auto").q ?? "";
   const formulario = (
-    <form action="/buscar" role="search" className="flex max-w-2xl gap-2">
+    <form
+      action="/buscar"
+      role="search"
+      aria-label="Buscar en los resultados"
+      className="flex max-w-2xl gap-2"
+    >
       <label htmlFor="q-buscar" className="sr-only">
         Qué buscás
       </label>
@@ -70,7 +77,7 @@ export async function ResultadosBusqueda({ searchParams }: { searchParams: Promi
         name="q"
         defaultValue={q}
         placeholder="Ej.: Corolla 2015, pastillas de freno"
-        className="bg-tarjeta border-borde min-h-11 flex-1 rounded-xl border px-4"
+        className="bg-tarjeta border-borde min-h-11 min-w-0 flex-1 rounded-xl border px-4"
       />
       <button
         type="submit"
@@ -84,7 +91,7 @@ export async function ResultadosBusqueda({ searchParams }: { searchParams: Promi
     return (
       <div className="flex flex-col gap-4">
         {formulario}
-        <p className="text-tinta-suave">Escribí una marca, un modelo o una pieza.</p>
+        <p className="text-tinta-suave break-words">Escribí una marca, un modelo o una pieza.</p>
       </div>
     );
   }
@@ -102,17 +109,24 @@ export async function ResultadosBusqueda({ searchParams }: { searchParams: Promi
       </div>
     );
   }
-  const vacio = paginas.every((p) => !p?.results.length);
+  const primeraSeccion = paginas.findIndex((p) => p?.results.length);
+  const vacio = primeraSeccion < 0;
   return (
     <div className="flex flex-col gap-10">
       {formulario}
       {vacio ? (
-        <p role="status" className="text-tinta-suave">
+        <p role="status" className="text-tinta-suave break-words">
           No encontramos nada para «{q}».
         </p>
       ) : (
         SECCIONES.map((s, i) => (
-          <Seccion key={s.tipo} {...s} q={q} pagina={paginas[i] as Pagina<Tarjeta>} />
+          <Seccion
+            key={s.tipo}
+            {...s}
+            q={q}
+            pagina={paginas[i] as Pagina<Tarjeta>}
+            priorizar={i === primeraSeccion}
+          />
         ))
       )}
     </div>

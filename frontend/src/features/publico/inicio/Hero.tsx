@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import cargadorImagenes from "@/shared/lib/cargador-imagenes";
+import cargadorHero from "@/shared/lib/cargador-hero";
 
 import { IconoWhatsapp } from "../componentes/BotonWhatsapp";
 
@@ -17,7 +17,7 @@ export function Hero() {
     >
       <Image
         src={FOTO_PATIO}
-        loader={cargadorImagenes}
+        loader={cargadorHero}
         alt=""
         fill
         sizes="100vw"

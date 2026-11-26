@@ -67,6 +67,12 @@ export function Buscador({ id, alElegir }: { id: string; alElegir?: () => void }
   const idLista = `${id}-sugerencias`;
   const idOpcion = (i: number) => `${id}-opcion-${i}`;
 
+  useEffect(() => {
+    if (abierto && activo >= 0) {
+      document.getElementById(id + "-opcion-" + activo)?.scrollIntoView?.({ block: "nearest" });
+    }
+  }, [abierto, activo, id]);
+
   function buscar(consulta: string) {
     // Solo cuenta la última búsqueda: la anterior se cancela y su respuesta se ignora.
     control.current?.abort();
@@ -172,10 +178,19 @@ export function Buscador({ id, alElegir }: { id: string; alElegir?: () => void }
   }
 
   const sinResultados = estado === "listo" && autos.length + repuestos.length === 0;
+  const aviso =
+    estado === "cargando"
+      ? "Buscando…"
+      : estado === "error"
+        ? "No pudimos buscar. Probá de nuevo."
+        : sinResultados
+          ? `Sin resultados para «${texto}».`
+          : "";
 
   return (
     <form
       role="search"
+      aria-label="Buscar en el catálogo"
       action="/buscar"
       onSubmit={(e) => {
         e.preventDefault();
@@ -197,7 +212,7 @@ export function Buscador({ id, alElegir }: { id: string; alElegir?: () => void }
           autoComplete="off"
           aria-autocomplete="list"
           aria-expanded={abierto}
-          aria-controls={idLista}
+          aria-controls={abierto ? idLista : undefined}
           aria-activedescendant={abierto && activo >= 0 ? idOpcion(activo) : undefined}
           value={q}
           onChange={(e) => alEscribir(e.target.value)}
@@ -206,27 +221,26 @@ export function Buscador({ id, alElegir }: { id: string; alElegir?: () => void }
             if (texto.length >= MINIMO && estado !== "inactivo") setAbierto(true);
           }}
           placeholder="Buscá marca, modelo o pieza…"
-          className="placeholder:text-tinta-suave min-w-0 flex-1 bg-transparent px-3 text-base outline-none"
+          className="placeholder:text-tinta-suave min-w-0 flex-1 bg-transparent px-3 text-base focus-visible:rounded-md"
         />
         <button
           type="submit"
-          className="bg-rojo hover:bg-rojo-fuerte min-h-10 rounded-lg px-4 font-semibold text-white"
+          className="bg-rojo hover:bg-rojo-fuerte min-h-11 rounded-lg px-4 font-semibold text-white"
         >
           Buscar
         </button>
       </div>
 
+      <p role="status" className="sr-only">
+        {abierto ? aviso : ""}
+      </p>
       {abierto ? (
-        <div className="bg-tarjeta border-borde absolute inset-x-0 top-full z-40 mt-1.5 max-h-[70dvh] overflow-y-auto rounded-xl border p-1.5 shadow-lg">
-          <p role="status" className="text-tinta-suave px-3 py-1 text-sm empty:hidden">
-            {estado === "cargando"
-              ? "Buscando…"
-              : estado === "error"
-                ? "No pudimos buscar. Probá de nuevo."
-                : sinResultados
-                  ? `Sin resultados para «${texto}».`
-                  : ""}
-          </p>
+        <div className="bg-tarjeta border-borde absolute inset-x-0 top-full z-40 mt-1.5 max-h-[min(70dvh,calc(100dvh-var(--sugerencias-top,10rem)-0.5rem))] overflow-y-auto overscroll-contain rounded-xl border p-1.5 shadow-lg">
+          {aviso ? (
+            <p aria-hidden="true" className="text-tinta-suave px-3 py-1 text-sm">
+              {aviso}
+            </p>
+          ) : null}
           <div role="listbox" id={idLista} aria-label="Sugerencias">
             {grupo("Autos", autos, 0)}
             {grupo("Repuestos", repuestos, autos.length)}

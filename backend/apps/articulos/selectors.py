@@ -26,6 +26,13 @@ ORDENES = {
 }
 
 
+def compatibilidades_con_modelo():
+    return Prefetch(
+        "repuesto__compatibilidades",
+        queryset=Compatibilidad.objects.select_related("modelo__marca"),
+    )
+
+
 def visibles_publico() -> QuerySet[Articulo]:
     """Disponibles; un repuesto, además, con cantidad > 0. Reservados y agotados no salen."""
     return (
@@ -41,10 +48,7 @@ def visibles_publico() -> QuerySet[Articulo]:
         )
         .prefetch_related(
             "fotos",
-            Prefetch(
-                "repuesto__compatibilidades",
-                queryset=Compatibilidad.objects.select_related("modelo__marca"),
-            ),
+            compatibilidades_con_modelo(),
         )
     )
 
@@ -187,7 +191,7 @@ def similares(articulo: Articulo, limite: int = 3) -> list[Articulo]:
         ]
     else:
         repuesto = articulo.repuesto
-        modelos = list(repuesto.compatibilidades.values_list("modelo_id", flat=True))
+        modelos = {c.modelo_id for c in repuesto.compatibilidades.all()}
         misma_categoria = base.filter(repuesto__categoria_pieza_id=repuesto.categoria_pieza_id)
         niveles = [
             misma_categoria.filter(repuesto__compatibilidades__modelo_id__in=modelos).distinct(),
@@ -196,14 +200,13 @@ def similares(articulo: Articulo, limite: int = 3) -> list[Articulo]:
     niveles += [base.filter(destacado=True), base]
 
     elegidos: list[Articulo] = []
-    vistos: set[int] = set()
     for nivel in niveles:
-        for candidato in nivel.order_by("-publicado_en", "-id"):
-            if len(elegidos) == limite:
-                return elegidos
-            if candidato.id not in vistos:
-                vistos.add(candidato.id)
-                elegidos.append(candidato)
+        faltan = limite - len(elegidos)
+        if not faltan:
+            break
+        elegidos.extend(
+            nivel.exclude(id__in=[a.id for a in elegidos]).order_by("-publicado_en", "-id")[:faltan]
+        )
     return elegidos
 
 
@@ -215,6 +218,4 @@ def articulo_con_relaciones() -> QuerySet[Articulo]:
         "auto__traccion",
         "auto__carroceria",
         "repuesto__categoria_pieza__padre",
-    ).prefetch_related(
-        "fotos", "auto__equipamiento__grupo", "repuesto__compatibilidades__modelo__marca"
-    )
+    ).prefetch_related("fotos", "auto__equipamiento__grupo", compatibilidades_con_modelo())

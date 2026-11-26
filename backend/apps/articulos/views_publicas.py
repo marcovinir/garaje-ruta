@@ -6,9 +6,11 @@ from rest_framework.views import APIView
 
 from apps.actividad.models import TipoCambio
 
+from .models import Articulo
 from .presentacion import ruta_publica
 from .selectors import (
     articulo_con_relaciones,
+    compatibilidades_con_modelo,
     estado_publico,
     filtrar_catalogo,
     similares,
@@ -61,7 +63,10 @@ class FichaView(VistaPublica):
 
 class SimilaresView(VistaPublica):
     def get(self, request, pk: int):
-        articulo = get_object_or_404(articulo_con_relaciones(), pk=pk)
+        referentes = Articulo.objects.select_related("auto__modelo", "repuesto").prefetch_related(
+            compatibilidades_con_modelo()
+        )
+        articulo = get_object_or_404(referentes, pk=pk)
         datos = TarjetaSerializer(
             similares(articulo), many=True, context=self.get_serializer_context()
         )
