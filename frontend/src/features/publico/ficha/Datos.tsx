@@ -3,7 +3,7 @@ import { condicionRepuesto } from "./datosComercialesRepuesto";
 import type { FichaAuto, FichaRepuesto } from "@/shared/api/tipos";
 import { miles } from "@/shared/lib/dinero";
 
-type Fila = [string, string | null];
+type Fila = [string, string | null | undefined];
 
 const ESTADO_GENERAL = {
   excelente: "Excelente",
@@ -12,7 +12,18 @@ const ESTADO_GENERAL = {
   regular: "Regular",
 } as const;
 
-const siNo = (v: boolean) => (v ? "Sí" : "No");
+const siNo = (v?: boolean | null) => (v == null ? null : v ? "Sí" : "No");
+const numero = (v?: number | null) => (v == null ? null : miles(v));
+const conUnidad = (v: number | null | undefined, unidad: string) =>
+  v == null ? null : `${miles(v)} ${unidad}`;
+const kwh = new Intl.NumberFormat("es-CR", { maximumFractionDigits: 2 });
+
+function marchamo(auto: FichaAuto) {
+  const estado =
+    auto.marchamo_al_dia == null ? null : auto.marchamo_al_dia ? "Al día" : "Pendiente";
+  const anio = auto.marchamo_anio == null ? null : String(auto.marchamo_anio);
+  return [estado, anio].filter(Boolean).join(" · ") || null;
+}
 
 function mesYAnio(fecha: string): string {
   return new Intl.DateTimeFormat("es-CR", {
@@ -22,19 +33,30 @@ function mesYAnio(fecha: string): string {
   }).format(new Date(`${fecha}T00:00:00Z`));
 }
 
-function Tabla({ titulo, filas }: { titulo: string; filas: Fila[] }) {
-  const visibles = filas.filter((f): f is [string, string] => Boolean(f[1]));
+function Tabla({
+  titulo,
+  filas,
+  mostrarVacios = false,
+}: {
+  titulo: string;
+  filas: Fila[];
+  mostrarVacios?: boolean;
+}) {
+  const visibles = filas.filter(([, valor]) => valor?.trim());
+  if (!visibles.length) return null;
   return (
     <section aria-label={titulo} className="flex flex-col gap-3">
       <h2 className="titulo text-2xl">{titulo}</h2>
       <dl className="bg-tarjeta border-borde grid rounded-2xl border sm:grid-cols-2">
-        {visibles.map(([etiqueta, valor]) => (
+        {(mostrarVacios ? filas : visibles).map(([etiqueta, valor]) => (
           <div
             key={etiqueta}
             className="border-borde flex justify-between gap-4 border-b px-4 py-3 last:border-b-0"
           >
             <dt className="text-tinta-suave">{etiqueta}</dt>
-            <dd className="text-right font-semibold">{valor}</dd>
+            <dd className="min-w-0 text-right font-semibold break-words">
+              {valor?.trim() || "Consultar"}
+            </dd>
           </div>
         ))}
       </dl>
@@ -42,59 +64,126 @@ function Tabla({ titulo, filas }: { titulo: string; filas: Fila[] }) {
   );
 }
 
+export function ResumenAuto({ auto }: { auto: FichaAuto }) {
+  const resumen = [
+    conUnidad(auto.kilometraje, "km"),
+    auto.transmision?.trim(),
+    auto.combustible?.trim(),
+  ].map((valor) => valor || "Consultar");
+  return (
+    <div className="text-tinta-suave flex flex-col gap-2 text-sm">
+      <p>{resumen.join(" · ")}</p>
+      <dl className="border-borde flex flex-col gap-1 border-t pt-2">
+        <div className="flex flex-wrap justify-between gap-x-3">
+          <dt>Marchamo</dt>
+          <dd className="text-tinta font-semibold">{marchamo(auto) ?? "Consultar"}</dd>
+        </div>
+        <div className="flex flex-wrap justify-between gap-x-3">
+          <dt>RTV vence</dt>
+          <dd className="text-tinta font-semibold">
+            {auto.riteve_vence ? mesYAnio(auto.riteve_vence) : "Consultar"}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 export function DatosAuto({ auto }: { auto: FichaAuto }) {
+  const tieneBateria =
+    auto.combustible === "Eléctrico" || auto.combustible === "Híbrido enchufable";
   return (
     <>
       <Tabla
-        titulo="Ficha técnica"
+        titulo="Especificaciones técnicas"
+        mostrarVacios
         filas={[
           ["Marca", auto.marca],
           ["Modelo", auto.modelo],
-          ["Versión", auto.version || null],
-          ["Año", String(auto.anio)],
-          ["Kilometraje", `${miles(auto.kilometraje)} km`],
+          ["Versión", auto.version],
+          ["Año", auto.anio == null ? null : String(auto.anio)],
+          ["Kilometraje", conUnidad(auto.kilometraje, "km")],
           ["Transmisión", auto.transmision],
           ["Combustible", auto.combustible],
           ["Tracción", auto.traccion],
           ["Carrocería", auto.carroceria],
-          ["Motor", auto.cilindrada_cc ? `${miles(auto.cilindrada_cc)} cc` : null],
+          ["Motor", conUnidad(auto.cilindrada_cc, "cc")],
           ["Color exterior", auto.color_exterior],
           ["Color interior", auto.color_interior],
-          ["Puertas", String(auto.puertas)],
-          ["Pasajeros", String(auto.pasajeros)],
-          ["Bolsas de aire", String(auto.bolsas_aire)],
+          ["Puertas", numero(auto.puertas)],
+          ["Pasajeros", numero(auto.pasajeros)],
+          ["Bolsas de aire", numero(auto.bolsas_aire)],
+        ]}
+      />
+      {tieneBateria && (
+        <Tabla
+          titulo="Batería y carga"
+          mostrarVacios
+          filas={[
+            ["Capacidad", auto.bateria_kwh == null ? null : `${kwh.format(auto.bateria_kwh)} kWh`],
+            ["Salud de la batería (SOH)", conUnidad(auto.bateria_salud_pct, "%")],
+            ["Autonomía", conUnidad(auto.autonomia_km, "km")],
+            ["Tipo de carga", auto.tipo_carga],
+          ]}
+        />
+      )}
+      <Equipamiento grupos={auto.equipamiento} />
+      <Tabla
+        titulo="Estado y mantenimiento"
+        mostrarVacios
+        filas={[
+          ["Estado general", ESTADO_GENERAL[auto.estado_general]],
+          [
+            "Procedencia",
+            auto.procedencia === "agencia"
+              ? "Agencia"
+              : auto.procedencia === "importado"
+                ? "Importado"
+                : null,
+          ],
+          ["Único dueño", siNo(auto.unico_dueno)],
+          ["Historial de mantenimiento", auto.historial_mantenimiento],
+          ["Historial de accidentes", auto.historial_accidentes],
         ]}
       />
       <Tabla
-        titulo="Papeles y condiciones"
+        titulo="Documentación"
+        mostrarVacios
         filas={[
-          ["Estado general", ESTADO_GENERAL[auto.estado_general]],
-          ["Procedencia", auto.procedencia === "agencia" ? "Agencia" : "Importado"],
-          ["Único dueño", siNo(auto.unico_dueno)],
-          ["Marchamo al día", siNo(auto.marchamo_al_dia)],
+          ["Marchamo", marchamo(auto)],
           ["RTV vence", auto.riteve_vence ? mesYAnio(auto.riteve_vence) : null],
           ["Impuestos pagados", siNo(auto.impuestos_pagados)],
-          [
-            "Placa termina en",
-            auto.placa_termina_en === null ? null : String(auto.placa_termina_en),
-          ],
-          ["Recibe vehículo", siNo(auto.acepta_vehiculo)],
+          ["Sin gravámenes", siNo(auto.sin_gravamenes)],
+          ["Traspaso incluido", siNo(auto.traspaso_incluido)],
+          ["Placa termina en", numero(auto.placa_termina_en)],
+        ]}
+      />
+      <Tabla
+        titulo="Condiciones de compra"
+        mostrarVacios
+        filas={[
           ["Precio negociable", siNo(auto.precio_negociable)],
+          ["Recibe vehículo", siNo(auto.acepta_vehiculo)],
+          ["Financiamiento", siNo(auto.financiamiento)],
+          ["Garantía", auto.garantia],
         ]}
       />
     </>
   );
 }
 
-export function Equipamiento({ grupos }: { grupos: FichaAuto["equipamiento"] }) {
-  if (!grupos.length) return null;
+function Equipamiento({ grupos }: { grupos: FichaAuto["equipamiento"] }) {
+  const conDatos = grupos
+    .map((grupo) => ({ ...grupo, items: grupo.items.filter((item) => item.trim()) }))
+    .filter((grupo) => grupo.items.length);
+  if (!conDatos.length) return null;
   return (
     <section aria-labelledby="equipamiento" className="flex flex-col gap-3">
       <h2 id="equipamiento" className="titulo text-2xl">
         Equipamiento
       </h2>
       <div className="bg-tarjeta border-borde grid gap-6 rounded-2xl border p-5 sm:grid-cols-2">
-        {grupos.map((g) => (
+        {conDatos.map((g) => (
           <div key={g.grupo} className="flex flex-col gap-2">
             <h3 className="font-bold">{g.grupo}</h3>
             <ul className="flex flex-col gap-1.5">

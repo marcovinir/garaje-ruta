@@ -235,6 +235,77 @@ describe("PaginaFicha", () => {
     expect(whatsapp.getAttribute("href")).toContain("wa.me/50688887777");
   });
 
+  it("muestra estado, ahorro y documentos en el bloque comercial del auto", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue({
+      ...ficha,
+      precio_anterior_colones: 7000000,
+      auto: { ...ficha.auto!, marchamo_anio: 2026 },
+    });
+    render(await PaginaFicha({ seccion: "autos", slug: "toyota-corolla-2015-se-12" }));
+    const bloque = within(screen.getByRole("complementary", { name: "Precio y contacto" }));
+    expect(bloque.getByText("Disponible")).toBeVisible();
+    expect(bloque.getByText(/Ahorrás ₡500/)).toBeVisible();
+    expect(bloque.getByText(/Antes ₡7/)).toHaveClass("line-through");
+    expect(bloque.getByText(/2026/)).toBeVisible();
+    expect(bloque.getByText(/marzo.*2027/)).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Vehículos relacionados" })).toBeVisible();
+  });
+
+  it("muestra Consultar en datos vacíos y omite secciones sin datos", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue({
+      ...ficha,
+      descripcion: "   ",
+      auto: {
+        ...ficha.auto!,
+        historial_mantenimiento: "Facturas disponibles",
+        historial_accidentes: "  ",
+        financiamiento: false,
+        sin_gravamenes: null,
+        equipamiento: [],
+        bateria_kwh: 42,
+      },
+    });
+    render(await PaginaFicha({ seccion: "autos", slug: "toyota-corolla-2015-se-12" }));
+    const estado = within(screen.getByRole("region", { name: "Estado y mantenimiento" }));
+    expect(estado.getByText("Historial de accidentes").nextElementSibling).toHaveTextContent(
+      "Consultar",
+    );
+    expect(estado.getByText("Facturas disponibles")).toBeVisible();
+    const compra = within(screen.getByRole("region", { name: "Condiciones de compra" }));
+    expect(compra.getByText("Financiamiento").nextElementSibling).toHaveTextContent(/^No$/);
+    expect(compra.getByText("Garantía").nextElementSibling).toHaveTextContent("Consultar");
+    for (const name of ["Batería y carga", "Equipamiento", "Descripción"]) {
+      expect(screen.queryByRole("heading", { name })).not.toBeInTheDocument();
+    }
+    expect(screen.queryByText(/Ahorrás/)).not.toBeInTheDocument();
+  });
+
+  it.each(["Eléctrico", "Híbrido enchufable"])(
+    "muestra batería con %s y conserva un SOH de 0",
+    async (combustible) => {
+      vi.mocked(datos.obtenerFicha).mockResolvedValue({
+        ...ficha,
+        auto: { ...ficha.auto!, combustible, bateria_kwh: 42.75, bateria_salud_pct: 0 },
+      });
+      render(await PaginaFicha({ seccion: "autos", slug: "toyota-corolla-2015-se-12" }));
+      const bateria = within(screen.getByRole("region", { name: "Batería y carga" }));
+      expect(bateria.getByText(/42,75 kWh/)).toBeVisible();
+      expect(bateria.getByText("Salud de la batería (SOH)").nextElementSibling).toHaveTextContent(
+        /0/,
+      );
+      expect(bateria.getByText("Autonomía").nextElementSibling).toHaveTextContent("Consultar");
+    },
+  );
+
+  it("omite la sección de batería de un eléctrico sin datos de carga", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue({
+      ...ficha,
+      auto: { ...ficha.auto!, combustible: "Eléctrico" },
+    });
+    render(await PaginaFicha({ seccion: "autos", slug: "toyota-corolla-2015-se-12" }));
+    expect(screen.queryByRole("heading", { name: "Batería y carga" })).not.toBeInTheDocument();
+  });
+
   it("un auto vendido dice que ya se vendió y ofrece 3 similares", async () => {
     vi.mocked(datos.obtenerFicha).mockResolvedValue({
       id: 12,

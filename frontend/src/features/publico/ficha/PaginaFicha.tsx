@@ -10,7 +10,7 @@ import {
   type Tarjeta,
   esFichaCompleta,
 } from "@/shared/api/tipos";
-import { colones, dolares, miles } from "@/shared/lib/dinero";
+import { colones, dolares } from "@/shared/lib/dinero";
 import { urlAbsoluta } from "@/shared/lib/rutas";
 import { enlaceWhatsappGeneral } from "@/shared/lib/whatsapp";
 
@@ -23,7 +23,7 @@ import { Precio } from "../componentes/Precio";
 import { TarjetaArticulo } from "../componentes/TarjetaArticulo";
 import { Compartir } from "./Compartir";
 import { ContadorVistas } from "./ContadorVistas";
-import { DatosAuto, DatosRepuesto, Equipamiento } from "./Datos";
+import { DatosAuto, DatosRepuesto, ResumenAuto } from "./Datos";
 import { Galeria } from "./Galeria";
 import { type Seccion, cargarFicha } from "./cargar";
 import {
@@ -117,10 +117,6 @@ function NoDisponible({
 }
 
 function resumen(f: FichaCompleta): string {
-  if (f.auto) {
-    const a = f.auto;
-    return `${a.anio} · ${miles(a.kilometraje)} km · ${a.transmision} · ${a.combustible}`;
-  }
   if (f.repuesto) {
     const r = f.repuesto;
     return resumenRepuesto(r);
@@ -177,6 +173,10 @@ function Completa({
   configuracion: CondicionesComerciales | null;
 }) {
   const url = urlAbsoluta(ficha.ruta);
+  const ahorro =
+    ficha.auto && ficha.precio_anterior_colones != null
+      ? ficha.precio_anterior_colones - ficha.precio_colones
+      : 0;
   const listado = LISTADO[ficha.tipo];
   const fotos = ficha.fotos.length ? ficha.fotos : ficha.foto ? [ficha.foto] : [];
   return (
@@ -211,7 +211,9 @@ function Completa({
             className="bg-tarjeta border-borde flex flex-col gap-4 rounded-2xl border p-5 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1"
           >
             <div className="flex flex-wrap gap-2">
-              {ficha.estado_publico === "reservado" ? <EtiquetaEstado estado="reservado" /> : null}
+              {ficha.tipo === "auto" || ficha.estado_publico === "reservado" ? (
+                <EtiquetaEstado estado={ficha.estado_publico} />
+              ) : null}
               {ficha.precio_anterior_colones ? (
                 <span className="bg-rojo rounded-md px-2 py-1 text-xs font-bold text-white">
                   OFERTA
@@ -222,7 +224,7 @@ function Completa({
               ) : null}
             </div>
             <h1 className="titulo text-4xl leading-none">{ficha.titulo}</h1>
-            <p className="text-tinta-suave">{resumen(ficha)}</p>
+            {!ficha.auto && <p className="text-tinta-suave">{resumen(ficha)}</p>}
             <Precio
               colones={ficha.precio_colones}
               dolares={ficha.precio_usd}
@@ -230,6 +232,12 @@ function Completa({
               mostrarAhorro={ficha.tipo === "repuesto"}
               tamano="ficha"
             />
+            {ahorro > 0 && (
+              <p className="text-disponible-tinta text-sm font-semibold">
+                Ahorrás {colones(ahorro)}
+              </p>
+            )}
+            {ficha.auto && <ResumenAuto auto={ficha.auto} />}
             {whatsapp ? (
               <div>
                 <ContactoFicha ficha={ficha} numero={whatsapp} />
@@ -239,7 +247,7 @@ function Completa({
             <Compartir titulo={ficha.titulo} url={url} />
           </aside>
           <div className="flex min-w-0 flex-col gap-8">
-            {ficha.descripcion ? (
+            {(ficha.auto ? ficha.descripcion.trim() : ficha.descripcion) ? (
               <section aria-labelledby="descripcion" className="flex flex-col gap-3">
                 <h2 id="descripcion" className="titulo text-2xl">
                   Descripción
@@ -247,12 +255,7 @@ function Completa({
                 <p className="leading-relaxed whitespace-pre-line">{ficha.descripcion}</p>
               </section>
             ) : null}
-            {ficha.auto ? (
-              <>
-                <DatosAuto auto={ficha.auto} />
-                <Equipamiento grupos={ficha.auto.equipamiento} />
-              </>
-            ) : null}
+            {ficha.auto ? <DatosAuto auto={ficha.auto} /> : null}
             {ficha.repuesto ? <DatosRepuesto repuesto={ficha.repuesto} /> : null}
             {ficha.repuesto && !ficha.repuesto.compatibilidades.length && (
               <section aria-labelledby="compatibilidad" className="flex flex-col gap-3">
@@ -271,7 +274,10 @@ function Completa({
           </div>
         </div>
       </div>
-      <Similares tarjetas={similares} />
+      <Similares
+        tarjetas={similares}
+        titulo={ficha.tipo === "auto" ? "Vehículos relacionados" : undefined}
+      />
       {whatsapp ? (
         // En el celular el botón queda fijo abajo, con el precio a la vista.
         <div className="barra-fija bg-tarjeta/95 border-borde fixed inset-x-0 bottom-0 z-30 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
