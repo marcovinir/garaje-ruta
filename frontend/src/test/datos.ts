@@ -45,15 +45,15 @@ export const CATALOGOS: Catalogos = {
       nombre: "Toyota",
       slug: "toyota",
       modelos: [
-        { id: 40, nombre: "Corolla", slug: "corolla" },
-        { id: 41, nombre: "RAV4", slug: "rav4" },
+        { id: 40, nombre: "Corolla", slug: "corolla", nombre_vehiculo: "Toyota Corolla" },
+        { id: 41, nombre: "RAV4", slug: "rav4", nombre_vehiculo: "Toyota RAV4" },
       ],
     },
     {
       id: 15,
       nombre: "Nissan",
       slug: "nissan",
-      modelos: [{ id: 55, nombre: "Sentra", slug: "sentra" }],
+      modelos: [{ id: 55, nombre: "Sentra", slug: "sentra", nombre_vehiculo: "Nissan Sentra" }],
     },
   ],
   categorias: [

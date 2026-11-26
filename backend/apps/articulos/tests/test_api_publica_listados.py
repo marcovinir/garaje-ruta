@@ -32,8 +32,12 @@ def test_tarjeta_de_auto(db):
         "precio_colones": 6_500_000,
         "precio_anterior_colones": 7_000_000,
         "precio_usd": 14_500,
+        "estado_publico": "disponible",
         "foto": {"public_id": "garaje-ruta/ejemplo/auto-01", "ancho": 1600, "alto": 1200},
         "auto": {
+            "marca": "Toyota",
+            "modelo": "Corolla",
+            "nombre_vehiculo": "Toyota Corolla",
             "anio": 2015,
             "kilometraje": 120_000,
             "transmision": "Automática",
@@ -63,7 +67,8 @@ def test_tarjeta_de_repuesto_con_resumen_de_compatibilidad(db):
     assert tarjeta["repuesto"] == {
         "condicion": "usado",
         "categoria": "Sistema eléctrico",
-        "compatibilidad_resumen": "Accent 2012–2016 y 2 más",
+        "compatibilidad_resumen": "Hyundai Accent 2012–2016 y 2 más",
+        "cantidad": 1,
     }
 
 
@@ -93,3 +98,33 @@ def test_destacados_completa_hasta_8(db):
     assert len(ids) == 8
     assert ids[:3] == [a.id for a in reversed(destacados)]
     assert set(ids[3:]) <= {a.id for a in otros}
+
+
+def test_listado_serializa_tarjetas_sin_consultas_por_articulo(db, django_assert_num_queries):
+    crear_auto(modelo=modelo("Mazda", "Mazda 3"))
+    repuesto = crear_repuesto()
+    for nombre in ("Mazda 3", "CX-5"):
+        Compatibilidad.objects.create(
+            repuesto=repuesto.repuesto,
+            modelo=modelo("Mazda", nombre),
+            anio_desde=2012,
+            anio_hasta=2016,
+        )
+    cliente = APIClient()
+    # Conteo, artículos con sus relaciones, fotos, compatibilidades y tipo de cambio.
+    with django_assert_num_queries(5):
+        primera = cliente.get("/api/v1/articulos/").json()
+    for _ in range(4):
+        crear_auto(modelo=modelo("Mazda", "Mazda 3"))
+        pieza = crear_repuesto()
+        Compatibilidad.objects.create(
+            repuesto=pieza.repuesto,
+            modelo=modelo("Mazda", "Mazda 3"),
+            anio_desde=2019,
+            anio_hasta=2024,
+        )
+    with django_assert_num_queries(5):
+        segunda = cliente.get("/api/v1/articulos/").json()
+    assert len(primera["results"]) == 2
+    assert len(segunda["results"]) == 10
+    assert all(t["auto"]["nombre_vehiculo"] == "Mazda 3" for t in segunda["results"] if t["auto"])

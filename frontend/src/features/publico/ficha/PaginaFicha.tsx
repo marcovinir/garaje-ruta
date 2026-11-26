@@ -143,8 +143,7 @@ function ContactoFicha({
         tipo="auto"
         datos={{
           ...comun,
-          marca: ficha.auto.marca,
-          modelo: ficha.auto.modelo,
+          nombre: ficha.auto.nombre_vehiculo,
           anio: ficha.auto.anio,
         }}
         compacto={compacto}

@@ -13,14 +13,7 @@ export function AvisoCompatibilidad({ catalogos, filtros }: Props) {
     ? catalogos.marcas.find((m) => String(m.id) === filtros.compatible_marca)
     : marcaDelModelo;
   const modelo = marca?.modelos.find((m) => String(m.id) === filtros.compatible_modelo);
-  const nombre =
-    modelo && marca
-      ? modelo.nombre
-          .toLocaleLowerCase("es-CR")
-          .startsWith(marca.nombre.toLocaleLowerCase("es-CR") + " ")
-        ? modelo.nombre
-        : `${marca.nombre} ${modelo.nombre}`
-      : marca?.nombre;
+  const nombre = modelo?.nombre_vehiculo ?? marca?.nombre;
   const vehiculo = nombre
     ? [nombre, filtros.compatible_anio].filter(Boolean).join(" ")
     : filtros.compatible_anio

@@ -13,6 +13,7 @@ from .models import (
     Traccion,
     Transmision,
 )
+from .presentacion import nombre_modelo
 
 
 def _simples(modelo) -> list[dict]:
@@ -48,7 +49,13 @@ def catalogos_json() -> dict:
                 "nombre": m.nombre,
                 "slug": m.slug,
                 "modelos": [
-                    {"id": mo.id, "nombre": mo.nombre, "slug": mo.slug} for mo in m.modelos.all()
+                    {
+                        "id": mo.id,
+                        "nombre": mo.nombre,
+                        "slug": mo.slug,
+                        "nombre_vehiculo": nombre_modelo(m.nombre, mo.nombre),
+                    }
+                    for mo in m.modelos.all()
                 ],
             }
             for m in marcas

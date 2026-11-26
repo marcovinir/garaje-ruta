@@ -7,15 +7,25 @@ export type Tarjeta = {
   tipo: "auto" | "repuesto";
   titulo: string;
   ruta: string;
+  estado_publico?: "disponible" | "reservado" | "agotado" | "vendido" | "no_disponible";
   precio_colones: number;
   precio_anterior_colones: number | null;
   precio_usd: number | null;
   foto: FotoApi | null;
-  auto: { anio: number; kilometraje: number; transmision: string; combustible: string } | null;
+  auto: {
+    marca?: string;
+    modelo?: string;
+    nombre_vehiculo?: string;
+    anio: number;
+    kilometraje: number;
+    transmision: string;
+    combustible: string;
+  } | null;
   repuesto: {
     condicion: "nuevo" | "usado";
     categoria: string;
     compatibilidad_resumen: string;
+    cantidad?: number;
   } | null;
 };
 
@@ -50,6 +60,7 @@ export type DatosComercialesRepuesto = {
 export type FichaAuto = DatosComercialesAuto & {
   marca: string;
   modelo: string;
+  nombre_vehiculo: string;
   anio: number;
   version: string;
   kilometraje: number;
@@ -116,7 +127,7 @@ export type Catalogos = {
     id: number;
     nombre: string;
     slug: string;
-    modelos: { id: number; nombre: string; slug: string }[];
+    modelos: { id: number; nombre: string; slug: string; nombre_vehiculo?: string }[];
   }[];
   categorias: CategoriaApi[];
   transmisiones: { id: number; nombre: string }[];

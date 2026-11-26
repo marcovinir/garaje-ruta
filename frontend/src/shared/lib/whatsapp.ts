@@ -16,8 +16,7 @@ export function enlaceWhatsapp(numero: string, titulo: string, urlArticulo: stri
 
 type ContextoWhatsapp = { url: string; referencia?: string };
 export type AutoWhatsapp = ContextoWhatsapp & {
-  marca: string;
-  modelo: string;
+  nombre: string;
   anio: number;
   precio: number;
 };
@@ -35,19 +34,10 @@ function enlaceContextual(numero: string, mensaje: string, contexto: ContextoWha
   );
 }
 
-function nombreAuto(auto: AutoWhatsapp): string {
-  const modelo = auto.modelo
-    .toLocaleLowerCase("es-CR")
-    .startsWith(auto.marca.toLocaleLowerCase("es-CR") + " ")
-    ? auto.modelo
-    : `${auto.marca} ${auto.modelo}`;
-  return `${modelo} ${auto.anio}`;
-}
-
 export function enlaceConsultaAuto(numero: string, auto: AutoWhatsapp): string {
   return enlaceContextual(
     numero,
-    `Hola, estoy interesado en el ${nombreAuto(auto)} publicado en ${colones(auto.precio)}. ¿Todavía está disponible?`,
+    `Hola, estoy interesado en el ${auto.nombre} ${auto.anio} publicado en ${colones(auto.precio)}. ¿Todavía está disponible?`,
     auto,
   );
 }
@@ -55,7 +45,7 @@ export function enlaceConsultaAuto(numero: string, auto: AutoWhatsapp): string {
 export function enlaceVisitaAuto(numero: string, auto: AutoWhatsapp): string {
   return enlaceContextual(
     numero,
-    `Hola, me gustaría coordinar una visita para conocer el ${nombreAuto(auto)}.`,
+    `Hola, me gustaría coordinar una visita para conocer el ${auto.nombre} ${auto.anio}.`,
     auto,
   );
 }
