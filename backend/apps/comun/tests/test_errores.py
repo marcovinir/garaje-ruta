@@ -1,3 +1,4 @@
+import pytest
 from django.http import Http404
 from rest_framework import serializers
 from rest_framework.permissions import AllowAny
@@ -64,3 +65,15 @@ def test_error_anidado_se_aplana_con_punto():
     assert r.data["campos"]["contacto.email"] == [
         "Introduzca una dirección de correo electrónico válida."
     ]
+
+
+@pytest.mark.parametrize("error", [ConnectionError, TimeoutError])
+def test_una_falla_fuera_del_correo_conserva_su_excepcion(error):
+    class VistaConFalla(APIView):
+        permission_classes = [AllowAny]
+
+        def get(self, request):
+            raise error("Falló una consulta fuera del correo")
+
+    with pytest.raises(error, match="fuera del correo"):
+        VistaConFalla.as_view()(APIRequestFactory().get("/x/"))

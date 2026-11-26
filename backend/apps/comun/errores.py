@@ -1,13 +1,11 @@
 import logging
-import smtplib
 
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
-from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 MENSAJE_VALIDACION = "Revisá los datos marcados."
-CORREO_CAIDO = "No pudimos enviar el correo. Probá de nuevo en unos minutos."
+
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +35,8 @@ def _aplanar(errores: dict, prefijo: str = "") -> dict[str, list[str]]:
 
 def manejador_excepciones(exc, context):
     """Da a todos los errores de la API la forma {"detalle": str, "campos": {...}}."""
-    # Un fallo del servidor de correo no es un error de la app: 503 con un mensaje claro (si
-    # la operación era atómica, como crear un usuario, ya se deshizo).
-    if isinstance(exc, (smtplib.SMTPException, ConnectionError, TimeoutError)):
-        logger.exception("Fallo del servidor de correo")
-        return Response(
-            {"detalle": CORREO_CAIDO, "campos": {}}, status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+    if isinstance(exc, CorreoNoEnviado):
+        logger.warning("Fallo del servidor de correo (%s)", type(exc.__cause__).__name__)
     respuesta = exception_handler(exc, context)
     if respuesta is None:
         return None
@@ -62,6 +55,14 @@ def manejador_excepciones(exc, context):
 
     respuesta.data = {"detalle": detalle, "campos": campos}
     return respuesta
+
+
+class CorreoNoEnviado(APIException):
+    """El backend de correo no pudo enviar el mensaje."""
+
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = "No pudimos enviar el correo. Probá de nuevo en unos minutos."
+    default_code = "correo_no_enviado"
 
 
 class Conflicto(APIException):

@@ -4,7 +4,7 @@ y «recuperar» no revela si el correo existe."""
 import smtplib
 
 import pytest
-from django.core.cache import cache
+from django.core.mail import EmailMultiAlternatives
 from rest_framework.test import APIClient
 
 from apps.comun.pruebas import cliente_de, crear_admin
@@ -13,15 +13,15 @@ from apps.cuentas.models import Usuario
 NO_SE_PUDO = "No pudimos enviar el correo. Probá de nuevo en unos minutos."
 
 
-class NotificadorCaido:
-    def enviar(self, *args, **kwargs):
-        raise smtplib.SMTPException("Servidor de correo caído")
+@pytest.fixture(autouse=True, params=[smtplib.SMTPException, ConnectionError, TimeoutError])
+def _smtp_caido(settings, monkeypatch, request):
+    settings.NOTIFICADOR = "apps.comun.notificaciones.NotificadorCorreo"
 
+    def falla_de_envio(self, *, fail_silently):
+        assert fail_silently is False
+        raise request.param("Servidor de correo caído")
 
-@pytest.fixture(autouse=True)
-def _smtp_caido(settings):
-    cache.clear()
-    settings.NOTIFICADOR = "apps.cuentas.tests.test_smtp_caido.NotificadorCaido"
+    monkeypatch.setattr(EmailMultiAlternatives, "send", falla_de_envio)
 
 
 def test_crear_usuario_con_smtp_caido_da_503_y_no_lo_crea(db):
