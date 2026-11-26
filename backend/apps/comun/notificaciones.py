@@ -7,6 +7,8 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils.module_loading import import_string
 
+from .errores import CorreoNoEnviado
+
 logger = logging.getLogger(__name__)
 
 # (nombre del archivo, contenido, tipo MIME), p. ej. un PDF adjunto.
@@ -41,7 +43,11 @@ class NotificadorCorreo:
             mensaje.attach_alternative(html, "text/html")
         for nombre, contenido, tipo in adjuntos or []:
             mensaje.attach(nombre, contenido, tipo)
-        mensaje.send(fail_silently=False)
+        try:
+            mensaje.send(fail_silently=False)
+        except OSError as exc:
+            # SMTPException, errores de red y esperas agotadas comparten esta base.
+            raise CorreoNoEnviado() from exc
 
 
 class NotificadorMemoria:
