@@ -75,7 +75,7 @@ export function PieDePagina({
           ) : null}
           <Link
             href="/contacto"
-            className="text-rojo-oscuro self-start text-sm font-semibold underline underline-offset-4"
+            className="text-rojo-oscuro inline-flex min-h-11 items-center self-start text-sm font-semibold underline underline-offset-4"
           >
             Contacto y confianza
           </Link>
@@ -95,7 +95,12 @@ export function PieDePagina({
         <div className="flex flex-col gap-2 text-sm">
           <h2 className="titulo text-lg">Ubicación</h2>
           {configuracion?.mapa_url ? (
-            <a href={configuracion.mapa_url} target="_blank" rel="noopener noreferrer">
+            <a
+              href={configuracion.mapa_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center self-start"
+            >
               Ver en el mapa
             </a>
           ) : (
@@ -110,7 +115,7 @@ export function PieDePagina({
               href="https://www.exchangerate-api.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline"
+              className="inline-flex min-h-11 items-center underline"
             >
               Rates By Exchange Rate API
             </a>

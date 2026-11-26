@@ -11,13 +11,17 @@ import { useDesplazado } from "./useDesplazado";
 
 function Logo({ className }: { className: string }) {
   return (
-    <Link href="/" aria-label="Garaje Ruta, inicio" className="shrink-0">
+    <Link
+      href="/"
+      aria-label="Garaje Ruta, inicio"
+      className="inline-flex min-h-11 shrink-0 items-center"
+    >
       <Image
         src="/marca/logo-completo.svg"
         alt=""
         width={144}
         height={45}
-        priority
+        loading="lazy"
         unoptimized
         className={`w-auto transition-[height] motion-reduce:transition-none ${className}`}
       />
@@ -51,7 +55,7 @@ export function Encabezado() {
     const alTeclear = (e: KeyboardEvent) => {
       // Si el buscador ya usó el Esc para cerrar sus sugerencias, el menú queda.
       if (e.key !== "Escape" || e.defaultPrevented) return;
-      const focoAdentro = document.getElementById("menu-publico")?.contains(document.activeElement);
+      const focoAdentro = botonMenu.current?.closest("header")?.contains(document.activeElement);
       setAbierto(false);
       if (focoAdentro) botonMenu.current?.focus();
     };
@@ -68,11 +72,12 @@ export function Encabezado() {
   return (
     <header
       data-compacto={compacto}
+      data-menu-abierto={abierto}
       // Cualquier enlace del encabezado (menú, accesos, logo) navega: el menú se cierra.
       onClickCapture={(e) => {
         if ((e.target as Element).closest("a")) setAbierto(false);
       }}
-      className="bg-tarjeta border-rojo group sticky top-0 z-30 border-b-2 shadow-sm"
+      className="bg-tarjeta border-rojo group sticky top-0 z-30 border-b-2 shadow-sm [--alto-menu:max(2.75rem,min(35dvh,100dvh-12rem))] [--sugerencias-top:7.75rem] max-lg:data-[menu-abierto=true]:[--sugerencias-top:calc(7.75rem+var(--alto-menu))] lg:[--sugerencias-top:5rem]"
     >
       {/* Escritorio */}
       <div className="hidden lg:block">
@@ -81,7 +86,7 @@ export function Encabezado() {
           <Buscador id="buscar-escritorio" />
         </div>
         <div className="border-borde border-t">
-          <div className="mx-auto max-w-6xl px-6 group-data-[compacto=true]:[&_a]:min-h-9">
+          <div className="mx-auto max-w-6xl px-6">
             <Nav variante="principal" />
           </div>
         </div>
@@ -106,12 +111,15 @@ export function Encabezado() {
           </div>
         </div>
         {abierto ? (
-          <div id="menu-publico" className="border-borde border-t">
+          <div
+            id="menu-publico"
+            className="border-borde max-h-(--alto-menu) overflow-y-auto overscroll-contain border-t"
+          >
             <Nav variante="menu" alNavegar={cerrar} />
           </div>
         ) : null}
         <Buscador id="buscar-celular" alElegir={cerrar} />
-        <div className="group-data-[compacto=true]:hidden">
+        <div className="group-data-[compacto=true]:hidden [@media(max-height:320px)]:group-data-[menu-abierto=true]:hidden">
           <Nav variante="accesos" />
         </div>
       </div>

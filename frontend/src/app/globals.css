@@ -94,7 +94,33 @@ html {
 /* En el celular la ficha tiene una barra fija abajo: el pie no debe quedar tapado. */
 @media (width < 64rem) {
   body:has(.barra-fija) {
-    padding-bottom: 6rem;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* El contenido enfocado debe poder salir de debajo del encabezado y de la barra de ficha. */
+html:has(body > header[data-menu-abierto]) {
+  scroll-padding-block-start: 12rem;
+  scroll-padding-block-end: calc(6rem + env(safe-area-inset-bottom));
+}
+
+body:has(> header[data-menu-abierto="true"]) [data-origen-whatsapp="flotante"],
+body:has(> header [role="combobox"][aria-expanded="true"]) [data-origen-whatsapp="flotante"] {
+  display: none;
+}
+
+/* Al quedar menos de 80 px libres a cada lado, el botón va después del pie. */
+@media (width < 82rem) {
+  body:has(> header[data-menu-abierto]) [data-origen-whatsapp="flotante"] {
+    position: static;
+    align-self: end;
+    margin: 0.75rem 1.25rem;
+  }
+}
+
+@media (width < 64rem) and (height < 32rem) {
+  html:has(body > header[data-menu-abierto]) {
+    scroll-padding-block-start: 7rem;
   }
 }
 

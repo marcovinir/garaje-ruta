@@ -46,7 +46,7 @@ export function Contacto({ configuracion }: { configuracion: Configuracion | nul
           Negocio ficticio de portafolio. Los datos del sitio son de ejemplo.
         </p>
       </header>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Bloque titulo="Ubicación">
           <p>Heredia, Costa Rica</p>
           {direccion && direccion.toLocaleLowerCase("es-CR") !== "heredia, costa rica" && (

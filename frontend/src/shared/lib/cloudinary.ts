@@ -2,12 +2,15 @@
 
 export const FOTO_PENDIENTE = "/marca/foto-pendiente.svg";
 
-export type OpcionesFoto = { ancho?: number; alto?: number; recorte?: boolean };
+export type OpcionesFoto = { ancho?: number; alto?: number; recorte?: boolean; calidad?: "low" };
 
-export function urlFoto(publicId: string, { ancho, alto, recorte }: OpcionesFoto = {}): string {
+export function urlFoto(
+  publicId: string,
+  { ancho, alto, recorte, calidad }: OpcionesFoto = {},
+): string {
   const nube = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD;
   if (!nube) return FOTO_PENDIENTE;
-  const partes = ["f_auto", "q_auto"];
+  const partes = ["f_auto", calidad ? "q_auto:" + calidad : "q_auto"];
   if (ancho) partes.push(`w_${ancho}`);
   if (alto) partes.push(`h_${alto}`);
   if (recorte) partes.push("c_fill");

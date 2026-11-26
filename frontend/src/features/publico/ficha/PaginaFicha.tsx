@@ -86,8 +86,12 @@ function NoDisponible({
         {ficha.estado_publico !== "no_disponible" ? (
           <EtiquetaEstado estado={ficha.estado_publico} />
         ) : null}
-        <h1 className="titulo text-4xl sm:text-5xl">{titulo}</h1>
-        {ficha.titulo ? <p className="text-lg font-semibold">{ficha.titulo}</p> : null}
+        <h1 className="titulo text-4xl break-words sm:text-5xl">{titulo}</h1>
+        {ficha.titulo ? (
+          <p data-titulo-ficha className="text-lg font-semibold break-words">
+            {ficha.titulo}
+          </p>
+        ) : null}
         <p className="text-tinta-suave max-w-md">
           Mirá estos parecidos o escribinos: si nos entra uno igual, te avisamos.
         </p>
@@ -181,13 +185,19 @@ function Completa({
         <nav aria-label="Ruta de navegación" className="text-tinta-suave text-sm">
           <ol className="flex flex-wrap items-center gap-1.5">
             <li>
-              <Link href="/" className="hover:text-tinta">
+              <Link
+                href="/"
+                className="hover:text-tinta inline-flex min-h-11 min-w-11 items-center justify-center"
+              >
                 Inicio
               </Link>
             </li>
             <li aria-hidden="true">›</li>
             <li>
-              <Link href={listado.href} className="hover:text-tinta">
+              <Link
+                href={listado.href}
+                className="hover:text-tinta inline-flex min-h-11 min-w-11 items-center justify-center"
+              >
                 {listado.nombre}
               </Link>
             </li>
@@ -218,7 +228,9 @@ function Completa({
                 <EtiquetaEstado estado={ficha.repuesto.cantidad === 0 ? "agotado" : "disponible"} />
               ) : null}
             </div>
-            <h1 className="titulo text-4xl leading-none">{ficha.titulo}</h1>
+            <h1 data-titulo-ficha className="titulo text-4xl leading-none break-words">
+              {ficha.titulo}
+            </h1>
             {!ficha.auto && <p className="text-tinta-suave">{resumen(ficha)}</p>}
             <Precio
               colones={ficha.precio_colones}

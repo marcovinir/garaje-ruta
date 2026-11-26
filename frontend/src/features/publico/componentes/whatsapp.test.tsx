@@ -32,7 +32,7 @@ describe("WhatsApp en verde (#115)", () => {
     irA("/autos/toyota-corolla-2018-12");
     render(
       <>
-        <h1>Toyota Corolla 2018</h1>
+        <h1 data-titulo-ficha>Toyota Corolla 2018</h1>
         <WhatsappFlotante numero="50686877280" />
       </>,
     );
@@ -49,7 +49,7 @@ describe("WhatsApp en verde (#115)", () => {
     irA("/autos/toyota-corolla-2018-12");
     const { rerender } = render(
       <>
-        <h1>Toyota Corolla 2018</h1>
+        <h1 data-titulo-ficha>Toyota Corolla 2018</h1>
         <WhatsappFlotante numero="50686877280" />
       </>,
     );
@@ -64,6 +64,19 @@ describe("WhatsApp en verde (#115)", () => {
       </>,
     );
     fireEvent.click(enlace);
+    expect(texto(enlace)).toBe("Hola, vengo de la web de Garaje Ruta.");
+  });
+
+  it("usa el mensaje general en un 404 bajo una ruta de ficha", () => {
+    irA("/autos/auto-inexistente-99999999");
+    render(
+      <>
+        <h1>Esta página no existe</h1>
+        <WhatsappFlotante numero="50686877280" />
+      </>,
+    );
+    const enlace = screen.getByRole("link", { name: "Escribinos por WhatsApp" });
+    fireEvent.focus(enlace);
     expect(texto(enlace)).toBe("Hola, vengo de la web de Garaje Ruta.");
   });
 

@@ -111,7 +111,7 @@ export function Galeria({ fotos, titulo }: Props) {
                 aria-label={`Foto ${i + 1} de ${total}`}
                 aria-current={i === actual ? "true" : undefined}
                 onClick={() => ir(i)}
-                className={`block w-full overflow-hidden rounded-xl border-2 ${
+                className={`block min-h-11 w-full overflow-hidden rounded-xl border-2 ${
                   i === actual ? "border-rojo" : "border-transparent opacity-80 hover:opacity-100"
                 }`}
               >

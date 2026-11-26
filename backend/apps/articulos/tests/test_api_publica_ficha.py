@@ -138,3 +138,42 @@ def test_vista_de_oculto_o_inexistente_no_cuenta(db):
     assert APIClient().post(f"/api/v1/vistas/{oculto.id}/").status_code == 204
     assert APIClient().post("/api/v1/vistas/999999/").status_code == 204
     assert not VistaDiaria.objects.exists()
+
+
+def test_ficha_precarga_relaciones_en_consultas_acotadas(db, django_assert_num_queries):
+    cliente = APIClient()
+    auto = crear_auto()
+    auto.auto.equipamiento.add(*Equipamiento.objects.all()[:5])
+    repuesto = crear_repuesto()
+    for marca, nombre in [("Toyota", "Corolla"), ("Toyota", "Yaris"), ("Kia", "Rio")]:
+        Compatibilidad.objects.create(
+            repuesto=repuesto.repuesto,
+            modelo=modelo(marca, nombre),
+            anio_desde=2012,
+            anio_hasta=2016,
+        )
+    with django_assert_num_queries(6):
+        datos_auto = cliente.get(f"/api/v1/articulos/{auto.id}/").json()
+    with django_assert_num_queries(5):
+        datos_repuesto = cliente.get(f"/api/v1/articulos/{repuesto.id}/").json()
+    assert sum(len(g["items"]) for g in datos_auto["auto"]["equipamiento"]) == 5
+    assert len(datos_repuesto["repuesto"]["compatibilidades"]) == 3
+
+
+def test_similares_precarga_tarjetas_en_consultas_acotadas(db, django_assert_num_queries):
+    cliente = APIClient()
+    corolla = modelo("Toyota", "Corolla")
+    auto = crear_auto(modelo=corolla)
+    repuesto = crear_repuesto()
+    for articulo in [repuesto, *[crear_repuesto() for _ in range(5)]]:
+        Compatibilidad.objects.create(
+            repuesto=articulo.repuesto, modelo=corolla, anio_desde=2012, anio_hasta=2016
+        )
+    for _ in range(5):
+        crear_auto(modelo=corolla)
+    with django_assert_num_queries(4):
+        autos = cliente.get(f"/api/v1/articulos/{auto.id}/similares/").json()
+    with django_assert_num_queries(6):
+        repuestos = cliente.get(f"/api/v1/articulos/{repuesto.id}/similares/").json()
+    assert len(autos) == len(repuestos) == 3
+    assert all(r["repuesto"]["compatibilidad_resumen"] for r in repuestos)

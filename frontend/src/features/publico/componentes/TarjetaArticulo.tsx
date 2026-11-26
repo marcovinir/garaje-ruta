@@ -67,7 +67,7 @@ export function TarjetaArticulo({ tarjeta, prioridad = false }: Props) {
       <div className="relative overflow-hidden">
         <Foto
           foto={tarjeta.foto}
-          alt=""
+          alt={tarjeta.foto ? titulo : ""}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
           prioridad={prioridad}
         />

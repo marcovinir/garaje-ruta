@@ -69,6 +69,19 @@ afterEach(() => vi.useRealTimers());
 
 const usuario = () => userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
+it("conserva la misma región de anuncios antes, durante y después de buscar", async () => {
+  api([]);
+  render(<Buscador id="b" />);
+  const aviso = screen.getByRole("status");
+  expect(aviso).toBeEmptyDOMElement();
+  await usuario().type(campo(), "lento");
+  await act(() => vi.advanceTimersByTimeAsync(350));
+  expect(aviso).toHaveTextContent("Buscando…");
+  await act(() => vi.advanceTimersByTimeAsync(900));
+  expect(aviso).toBeEmptyDOMElement();
+  expect(screen.getByRole("status")).toBe(aviso);
+});
+
 describe("buscador con sugerencias (#115)", () => {
   it("no busca con una letra ni antes de 300 ms; después pide autos y repuestos, 4 de cada uno", async () => {
     const pedidos: Pedido[] = [];
@@ -104,13 +117,17 @@ describe("buscador con sugerencias (#115)", () => {
     const u = usuario();
     await u.type(campo(), "zzz");
     await act(() => vi.advanceTimersByTimeAsync(350));
-    expect(await screen.findByText("Sin resultados para «zzz».")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Sin resultados para «zzz»."),
+    );
 
     api([], { falla: true });
     await u.clear(campo());
     await u.type(campo(), "toyota");
     await act(() => vi.advanceTimersByTimeAsync(350));
-    expect(await screen.findByText("No pudimos buscar. Probá de nuevo.")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("No pudimos buscar. Probá de nuevo."),
+    );
   });
 
   it("con el teclado: flechas y Enter van al artículo; Esc cierra", async () => {

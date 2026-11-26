@@ -17,9 +17,11 @@ const FICHA = /^\/(autos|repuestos)\/[^/]+$/;
 export function WhatsappFlotante({ numero }: { numero: string }) {
   const pathname = usePathname();
   const enFicha = FICHA.test(pathname);
-  // El título se lee del <h1> de la ficha al usar el enlace, cuando la ficha ya está pintada.
+  // El título se lee de la ficha al usar el enlace, cuando ya está pintada.
   const completar = (e: SyntheticEvent<HTMLAnchorElement>) => {
-    const titulo = enFicha ? document.querySelector("h1")?.textContent?.trim() : undefined;
+    const titulo = enFicha
+      ? document.querySelector("[data-titulo-ficha]")?.textContent?.trim()
+      : undefined;
     // Fuera de la ficha vuelve al general: al navegar sin recargar, React no reescribe el href.
     e.currentTarget.href = titulo
       ? enlaceWhatsapp(numero, titulo, window.location.origin + pathname)
