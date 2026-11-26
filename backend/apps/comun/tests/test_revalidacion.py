@@ -125,3 +125,18 @@ def test_http_sin_secreto_no_llama(monkeypatch, settings):
 
     monkeypatch.setattr("apps.comun.revalidacion.requests.post", no_debe_llamarse)
     RevalidadorHttp().revalidar(["articulos"])
+
+
+def test_http_recorta_el_secreto_pegado_con_salto_de_linea(monkeypatch, settings):
+    """Un secreto pegado con «\n» al final rompía el encabezado y el aviso fallaba en silencio."""
+    settings.REVALIDACION_SECRETO = "s3cr3t\n"
+    settings.FRONTEND_URL = "https://garajeruta.test"
+    enviado = {}
+
+    def falso_post(url, json, headers, timeout):
+        enviado.update(headers=headers)
+        return Respuesta()
+
+    monkeypatch.setattr("apps.comun.revalidacion.requests.post", falso_post)
+    RevalidadorHttp().revalidar(["articulos"])
+    assert enviado["headers"] == {"Authorization": "Bearer s3cr3t"}

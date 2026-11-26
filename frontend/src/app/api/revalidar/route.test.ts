@@ -46,6 +46,12 @@ describe("POST /api/revalidar", () => {
     expect(revalidateTag).not.toHaveBeenCalled();
   });
 
+  it("acepta el secreto aunque en el servidor tenga un salto de línea al final", async () => {
+    vi.stubEnv("REVALIDACION_SECRETO", "secreto-de-prueba\n");
+    const respuesta = await POST(pedido({ etiquetas: ["articulos"] }, "secreto-de-prueba"));
+    expect(respuesta.status).toBe(200);
+  });
+
   it("revalida cada etiqueta de inmediato", async () => {
     const respuesta = await POST(
       pedido({ etiquetas: ["articulos", "articulo-12"] }, "secreto-de-prueba"),
