@@ -21,7 +21,7 @@ test("la ficha tiene Open Graph, canónica y botón de WhatsApp", async ({ page,
 
   await page.goto(auto.ruta);
   await expect(page.getByRole("heading", { level: 1, name: auto.titulo })).toBeVisible();
-  const whatsapp = page.getByRole("link", { name: /Consultar/ }).first();
+  const whatsapp = page.getByRole("link", { name: "Consultar por WhatsApp", exact: true });
   const href = (await whatsapp.getAttribute("href")) ?? "";
   expect(href).toMatch(/^https:\/\/wa\.me\/\d+\?text=/);
   const respuesta = await request.get(`/api/v1/articulos/${auto.id}/`);
@@ -35,7 +35,14 @@ test("la ficha tiene Open Graph, canónica y botón de WhatsApp", async ({ page,
   expect(mensaje).toBe(
     `Hola, estoy interesado en el ${modelo} ${datos.anio} publicado en ${colones(ficha.precio_colones)}. ¿Todavía está disponible?\n${new URL(auto.ruta, page.url()).href}`,
   );
-  await expect(page.getByRole("link", { name: "Agendar una visita", exact: true })).toBeVisible();
+  const visita = page.getByRole("link", { name: "Agendar una visita", exact: true });
+  await expect(visita).toBeVisible();
+  const enlaceVisita = new URL((await visita.getAttribute("href")) ?? "");
+  expect(enlaceVisita.host).toBe("wa.me");
+  expect(enlaceVisita.pathname).toBe(new URL(href).pathname);
+  expect(enlaceVisita.searchParams.get("text")).toBe(
+    `Hola, me gustaría coordinar una visita para conocer el ${modelo} ${datos.anio}.\n${new URL(auto.ruta, page.url()).href}`,
+  );
 });
 
 test("una URL con el texto viejo redirige con 308 a la canónica", async ({ request }) => {
@@ -45,4 +52,26 @@ test("una URL con el texto viejo redirige con 308 a la canónica", async ({ requ
   expect(vieja.status()).toBe(308);
   expect(vieja.headers()["location"]).toContain(auto.ruta);
   expect((await request.get("/autos/no-existe-999999", { maxRedirects: 0 })).status()).toBe(404);
+});
+
+test("ficha de auto sin desbordamiento en los seis anchos", async ({ page, request }, info) => {
+  test.skip(info.project.name !== "escritorio", "Este caso recorre todos los anchos");
+  const [auto] = await autosDisponibles(request);
+  await page.goto(auto.ruta);
+  const galeria = page.locator("main").getByAltText(auto.titulo).first();
+  const bloque = page.getByRole("complementary", { name: "Precio y contacto" });
+  await expect(bloque).toBeVisible();
+  for (const width of [360, 390, 768, 1024, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.locator("html")).toHaveJSProperty("scrollWidth", width);
+    const consulta = page.getByRole("link", { name: "Consultar", exact: true });
+    if (width < 1024) await expect(consulta).toBeVisible();
+    else await expect(consulta).toBeHidden();
+    const foto = await galeria.boundingBox();
+    const comercial = await bloque.boundingBox();
+    expect(foto).not.toBeNull();
+    expect(comercial).not.toBeNull();
+    if (width < 1024) expect(comercial!.y).toBeGreaterThan(foto!.y);
+    else expect(comercial!.x).toBeGreaterThan(foto!.x);
+  }
 });
