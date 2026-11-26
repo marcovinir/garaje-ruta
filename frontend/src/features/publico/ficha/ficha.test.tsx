@@ -85,6 +85,37 @@ const ficha: FichaCompleta = {
   repuesto: null,
 };
 
+const fichaRepuesto: FichaCompleta = {
+  ...ficha,
+  id: 18,
+  tipo: "repuesto",
+  titulo: "Faro Corolla",
+  ruta: "/repuestos/faro-corolla-18",
+  precio_colones: 80000,
+  precio_anterior_colones: 95000,
+  precio_usd: 160,
+  auto: null,
+  repuesto: {
+    categoria: { nombre: "Faros", padre: "Iluminación" },
+    condicion: "usado",
+    cantidad: 3,
+    numero_parte: "ABC-123",
+    fabricante: "Fabricante A",
+    clasificacion: "oem",
+    compatibilidades: [
+      {
+        marca: "Toyota",
+        modelo: "Corolla",
+        anio_desde: 2012,
+        anio_hasta: 2016,
+        motor_version: "1.8 L",
+      },
+      { marca: "Toyota", modelo: "Yaris", anio_desde: 2018, anio_hasta: 2018, motor_version: null },
+    ],
+  },
+};
+const rutaRepuesto = { seccion: "repuestos", slug: "faro-corolla-18" } as const;
+
 describe("cargarFicha", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -252,6 +283,109 @@ describe("PaginaFicha", () => {
     }
     expect(screen.getByRole("link", { name: "Agendar una visita" })).toBeInTheDocument();
   });
+  it("muestra condición, stock, ahorro y datos comerciales de la pieza", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue(fichaRepuesto);
+    vi.mocked(datos.obtenerSimilares).mockResolvedValue([
+      {
+        ...fichaRepuesto,
+        id: 19,
+        titulo: "Otro faro",
+        ruta: "/repuestos/otro-19",
+        repuesto: { condicion: "usado", categoria: "Faros", compatibilidad_resumen: "" },
+      },
+    ]);
+    render(await PaginaFicha(rutaRepuesto));
+    const bloque = within(screen.getByRole("complementary", { name: "Precio y contacto" }));
+    expect(bloque.getByText("Disponible")).toBeVisible();
+    expect(bloque.getByText(/Quedan 3/)).toBeVisible();
+    expect(bloque.getByText(/Usado/)).toBeVisible();
+    expect(bloque.getByText(/Ahorrás ₡15/)).toBeVisible();
+    for (const dato of ["ABC-123", "Fabricante A", "OEM"]) {
+      expect(bloque.getByText(dato)).toBeVisible();
+    }
+    expect(screen.getByRole("heading", { name: "Estado de la pieza" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Repuestos relacionados" })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: /Garantía, devoluciones y entrega/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([true, false])(
+    "la tabla usa encabezados y condiciona la columna de motor (%s)",
+    async (conMotor) => {
+      const repuesto = fichaRepuesto.repuesto!;
+      vi.mocked(datos.obtenerFicha).mockResolvedValue({
+        ...fichaRepuesto,
+        repuesto: {
+          ...repuesto,
+          compatibilidades: repuesto.compatibilidades.map((c) =>
+            conMotor ? c : { ...c, motor_version: "  " },
+          ),
+        },
+      });
+      render(await PaginaFicha(rutaRepuesto));
+      const tabla = within(screen.getByRole("table", { name: "Compatibilidad" }));
+      expect(tabla.getAllByRole("columnheader").map((c) => c.textContent)).toEqual([
+        "Marca",
+        "Modelo",
+        "Año inicial",
+        "Año final",
+        ...(conMotor ? ["Motor o versión"] : []),
+      ]);
+      expect(tabla.getAllByRole("row")).toHaveLength(3);
+      expect(tabla.getByRole("cell", { name: "Corolla" })).toBeVisible();
+      if (conMotor) {
+        expect(tabla.getByRole("cell", { name: "1.8 L" })).toBeVisible();
+        expect(tabla.getByRole("cell", { name: "Consultar" })).toBeVisible();
+      }
+    },
+  );
+
+  it("sin compatibilidades ofrece confirmación sin afirmar que calza", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue({
+      ...fichaRepuesto,
+      repuesto: { ...fichaRepuesto.repuesto!, compatibilidades: [], numero_parte: "" },
+    });
+    render(await PaginaFicha(rutaRepuesto));
+    const bloque = within(screen.getByRole("region", { name: "Compatibilidad" }));
+    expect(bloque.getByText("Consultá la compatibilidad con tu vehículo")).toBeVisible();
+    expect(bloque.queryByRole("table")).not.toBeInTheDocument();
+    const enlace = bloque.getByRole("link", { name: "Confirmar compatibilidad" });
+    const mensaje = new URL(enlace.getAttribute("href")!).searchParams.get("text");
+    expect(mensaje).toContain("Repuesto: Faro Corolla");
+    expect(mensaje).not.toContain("Número de parte:");
+  });
+
+  it("muestra solo los textos pertinentes de Configuración y marca los faltantes", async () => {
+    const configuracion = await datos.obtenerConfiguracion();
+    vi.mocked(datos.obtenerConfiguracion).mockResolvedValue({
+      ...configuracion!,
+      metodos_entrega: "Retiro en el local",
+      condiciones_devolucion: " ",
+    });
+    vi.mocked(datos.obtenerFicha).mockResolvedValue(fichaRepuesto);
+    render(await PaginaFicha(rutaRepuesto));
+    const seccion = within(
+      screen.getByRole("region", { name: /Garantía, devoluciones y entrega/i }),
+    );
+    expect(seccion.getByText("Retiro en el local")).toBeVisible();
+    expect(seccion.getByText("Devoluciones").nextElementSibling).toHaveTextContent("Consultar");
+  });
+
+  it("un repuesto agotado muestra su estado y no ofrece stock ni consulta de compra", async () => {
+    vi.mocked(datos.obtenerFicha).mockResolvedValue({
+      id: 18,
+      tipo: "repuesto",
+      estado_publico: "agotado",
+      titulo: fichaRepuesto.titulo,
+      ruta: fichaRepuesto.ruta,
+    });
+    render(await PaginaFicha(rutaRepuesto));
+    expect(screen.getByText("Agotado", { exact: true })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Este repuesto se agotó" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Consultar por WhatsApp" })).not.toBeInTheDocument();
+  });
+
   it("usa disponibilidad y compatibilidad en la ficha de repuesto", async () => {
     vi.mocked(datos.obtenerFicha).mockResolvedValue({
       ...ficha,
@@ -272,7 +406,9 @@ describe("PaginaFicha", () => {
     expect(new URL(consulta.getAttribute("href")!).searchParams.get("text")).toContain(
       "Quisiera conocer su disponibilidad.",
     );
-    const compatibilidad = screen.getByRole("link", { name: "Confirmar compatibilidad" });
+    const compatibilidad = within(
+      screen.getByRole("complementary", { name: "Precio y contacto" }),
+    ).getByRole("link", { name: "Confirmar compatibilidad" });
     expect(new URL(compatibilidad.getAttribute("href")!).searchParams.get("text")).toContain(
       "Número de parte: ABC",
     );
