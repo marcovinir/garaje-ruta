@@ -13,8 +13,7 @@ export const ENLACES: { clave: Clave; href: string; texto: string }[] = [
   { clave: "autos", href: "/autos", texto: "Autos" },
   { clave: "repuestos", href: "/repuestos", texto: "Repuestos" },
   { clave: "ofertas", href: "/autos?ofertas=1", texto: "Ofertas" },
-  // El pie de la página actual: todas las páginas públicas lo tienen (#105).
-  { clave: "contacto", href: "#contacto", texto: "Contacto" },
+  { clave: "contacto", href: "/contacto", texto: "Contacto" },
 ];
 
 const ACCESOS: Clave[] = ["autos", "repuestos", "ofertas"];
@@ -38,6 +37,7 @@ export function seccionActual(pathname: string, ofertas: boolean): Clave | null 
   if (pathname === "/autos" && ofertas) return "ofertas";
   if (pathname === "/autos" || pathname.startsWith("/autos/")) return "autos";
   if (pathname === "/repuestos" || pathname.startsWith("/repuestos/")) return "repuestos";
+  if (pathname === "/contacto") return "contacto";
   return null;
 }
 
