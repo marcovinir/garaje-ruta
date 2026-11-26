@@ -14,6 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: urlAbsoluta("/"), changeFrequency: "daily", priority: 1 },
     { url: urlAbsoluta("/autos"), changeFrequency: "daily", priority: 0.9 },
     { url: urlAbsoluta("/repuestos"), changeFrequency: "daily", priority: 0.9 },
+    { url: urlAbsoluta("/contacto"), changeFrequency: "monthly" },
   ];
   const articulos = await obtenerSitemap().catch(() => []);
   return [

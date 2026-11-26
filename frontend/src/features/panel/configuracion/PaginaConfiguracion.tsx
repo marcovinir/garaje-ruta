@@ -3,11 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { get, useFieldArray, useForm } from "react-hook-form";
+import { type FieldPath, get, useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { ApiError, api, camposPlanos } from "@/shared/api/navegador";
 import type { Configuracion } from "@/shared/api/tipos";
+import { esUrlWeb } from "@/shared/lib/urlWeb";
 
 import { mensajeDe } from "../auth/api";
 import { useSesion } from "../auth/useSesion";
@@ -32,7 +33,27 @@ const CONDICIONES = {
 } as const;
 const camposComerciales = Object.keys(CONDICIONES) as (keyof typeof CONDICIONES)[];
 
+const MAX_FILAS = 20;
+const obligatorio = (limite: number) =>
+  z.string().trim().min(1, "Completá este campo.").max(limite, `Máximo ${limite} caracteres.`);
+
 const esquema = z.object({
+  preguntas_frecuentes: z
+    .array(
+      z.object({
+        pregunta: obligatorio(160),
+        respuesta: obligatorio(1000),
+      }),
+    )
+    .max(MAX_FILAS),
+  redes_sociales: z
+    .array(
+      z.object({
+        red: obligatorio(60),
+        url: obligatorio(500).refine(esUrlWeb, "Pegá el enlace completo (https://…)."),
+      }),
+    )
+    .max(MAX_FILAS),
   garantia_repuestos: textoComercial,
   condiciones_devolucion: textoComercial,
   metodos_entrega: textoComercial,
@@ -74,6 +95,8 @@ function aValores(c: Configuracion): Valores {
     metodos_entrega: c.metodos_entrega ?? "",
     metodos_pago: c.metodos_pago ?? "",
     condiciones_compra: c.condiciones_compra ?? "",
+    preguntas_frecuentes: c.preguntas_frecuentes ?? [],
+    redes_sociales: c.redes_sociales ?? [],
     horarios: c.horarios.map((h) => ({ ...h, dia_semana: String(h.dia_semana) })),
   };
 }
@@ -93,6 +116,8 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
     formState: { errors },
   } = useForm<Valores>({ resolver: zodResolver(esquema), defaultValues: aValores(actual) });
   const horarios = useFieldArray({ control, name: "horarios" });
+  const preguntas = useFieldArray({ control, name: "preguntas_frecuentes" });
+  const redes = useFieldArray({ control, name: "redes_sociales" });
 
   const guardar = useMutation({
     mutationFn: (v: Valores) =>
@@ -112,7 +137,7 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
     onError: (error) => {
       if (error instanceof ApiError && error.status === 400) {
         for (const [campo, mensajes] of Object.entries(camposPlanos(error.campos))) {
-          setError(campo as keyof Valores, { message: mensajes.join(" ") });
+          setError(campo as FieldPath<Valores>, { message: mensajes.join(" ") });
         }
         setGeneral(error.detalle);
         return;
@@ -139,6 +164,29 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
       </Campo>
     );
   };
+
+  function textoLista(
+    nombre: FieldPath<Valores>,
+    etiqueta: string,
+    tipo: "text" | "url" | "area" = "text",
+  ) {
+    const id = `config-${nombre.replaceAll(".", "-")}`;
+    const error = mensaje(errors, nombre);
+    return (
+      <Campo id={id} etiqueta={etiqueta} error={error}>
+        {tipo === "area" ? (
+          <textarea
+            {...register(nombre)}
+            {...propsCampo(id, error)}
+            rows={3}
+            className={`${CAMPO} py-2`}
+          />
+        ) : (
+          <input {...register(nombre)} {...propsCampo(id, error)} type={tipo} className={CAMPO} />
+        )}
+      </Campo>
+    );
+  }
 
   return (
     <form
@@ -266,6 +314,72 @@ function Formulario({ actual, editable }: { actual: Configuracion; editable: boo
             );
           })}
         </MasDatos>
+        <section className={`${TARJETA} flex flex-col gap-4 p-5`}>
+          <h2 className="titulo text-2xl">Preguntas frecuentes</h2>
+          {preguntas.fields.map((campo, i) => (
+            <fieldset
+              key={campo.id}
+              className="border-borde flex min-w-0 flex-col gap-3 rounded-xl border p-3"
+            >
+              <legend className="px-1 text-sm font-bold">Pregunta {i + 1}</legend>
+              {textoLista(`preguntas_frecuentes.${i}.pregunta`, "Pregunta")}
+              {textoLista(`preguntas_frecuentes.${i}.respuesta`, "Respuesta", "area")}
+              {editable && (
+                <button
+                  type="button"
+                  onClick={() => preguntas.remove(i)}
+                  aria-label={`Quitar la pregunta ${i + 1}`}
+                  className={`${BOTON_TENUE} self-start`}
+                >
+                  Quitar
+                </button>
+              )}
+            </fieldset>
+          ))}
+          {editable && (
+            <button
+              type="button"
+              disabled={preguntas.fields.length >= MAX_FILAS}
+              onClick={() => preguntas.append({ pregunta: "", respuesta: "" })}
+              className={`${BOTON_SECUNDARIO} self-start`}
+            >
+              Agregar pregunta
+            </button>
+          )}
+        </section>
+        <section className={`${TARJETA} flex flex-col gap-4 p-5`}>
+          <h2 className="titulo text-2xl">Redes sociales</h2>
+          {redes.fields.map((campo, i) => (
+            <fieldset
+              key={campo.id}
+              className="border-borde grid min-w-0 items-end gap-3 rounded-xl border p-3 sm:grid-cols-[1fr_2fr_auto]"
+            >
+              <legend className="px-1 text-sm font-bold">Red social {i + 1}</legend>
+              {textoLista(`redes_sociales.${i}.red`, "Nombre de la red")}
+              {textoLista(`redes_sociales.${i}.url`, "Enlace de la red", "url")}
+              {editable && (
+                <button
+                  type="button"
+                  onClick={() => redes.remove(i)}
+                  aria-label={`Quitar la red social ${i + 1}`}
+                  className={BOTON_TENUE}
+                >
+                  Quitar
+                </button>
+              )}
+            </fieldset>
+          ))}
+          {editable && (
+            <button
+              type="button"
+              disabled={redes.fields.length >= MAX_FILAS}
+              onClick={() => redes.append({ red: "", url: "" })}
+              className={`${BOTON_SECUNDARIO} self-start`}
+            >
+              Agregar red social
+            </button>
+          )}
+        </section>
       </fieldset>
     </form>
   );
@@ -281,7 +395,7 @@ export function PaginaConfiguracion() {
     <div className="flex flex-col gap-5">
       <EncabezadoPagina
         titulo="Configuración"
-        descripcion="Lo que se ve en el pie de la web y en los enlaces de WhatsApp."
+        descripcion="Datos que se muestran en el pie, en Contacto y en los enlaces de WhatsApp."
       />
       {consulta.isError ? (
         <div className={`${TARJETA} flex flex-col items-start gap-3 p-5`}>

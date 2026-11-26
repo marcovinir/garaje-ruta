@@ -65,4 +65,5 @@ def test_migraciones_comerciales_preservan_registros():
             registro = estado_anterior.apps.get_model(app, nombre).objects.get(pk=pk)
             assert {campo: getattr(registro, campo) for campo in valores} == valores
     finally:
-        migrar(nuevas)
+        # Las pruebas siguientes usan el esquema completo, incluidas migraciones posteriores.
+        call_command("migrate", verbosity=0)

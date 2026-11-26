@@ -75,3 +75,47 @@ def test_condiciones_comerciales_del_negocio(db):
     for campo, valor in campos.items():
         assert res.json()[campo] == publicos[campo] == valor
     assert c.put(URL, datos(), format="json").json()["metodos_pago"] == "Transferencia"
+
+
+def test_edita_preguntas_y_redes_y_las_expone_en_orden(db):
+    from rest_framework.test import APIClient
+
+    publico = APIClient()
+    ruta = "/api/v1/configuracion/"
+    assert publico.get(ruta).json()["preguntas_frecuentes"] == []
+    assert publico.get(ruta).json()["redes_sociales"] == []
+    admin = cliente("admin")
+    nuevos = {
+        "preguntas_frecuentes": [
+            {"pregunta": " ¿Cómo consulto? ", "respuesta": " Escribinos. "},
+            {"pregunta": "¿Cómo llego?", "respuesta": "Consultá el mapa."},
+        ],
+        "redes_sociales": [{"red": " Red de prueba ", "url": "https://social.example/perfil"}],
+    }
+    respuesta = admin.put(URL, datos(**nuevos), format="json")
+    assert respuesta.status_code == 200
+    nuevos["preguntas_frecuentes"][0] = {"pregunta": "¿Cómo consulto?", "respuesta": "Escribinos."}
+    nuevos["redes_sociales"][0]["red"] = "Red de prueba"
+    for campo, valor in nuevos.items():
+        assert respuesta.json()[campo] == publico.get(ruta).json()[campo] == valor
+    assert (
+        admin.put(URL, datos(), format="json").json()["redes_sociales"] == nuevos["redes_sociales"]
+    )
+    res = admin.put(URL, datos(preguntas_frecuentes=[], redes_sociales=[]), format="json")
+    assert res.status_code == 200
+    assert publico.get(ruta).json()["preguntas_frecuentes"] == []
+    assert publico.get(ruta).json()["redes_sociales"] == []
+
+
+def test_rechaza_pregunta_incompleta_y_url_sin_http(db):
+    res = cliente("admin").put(
+        URL,
+        datos(
+            preguntas_frecuentes=[{"pregunta": " ", "respuesta": "Escribinos."}],
+            redes_sociales=[{"red": "Prueba", "url": "ftp://social.example/perfil"}],
+        ),
+        format="json",
+    )
+    assert res.status_code == 400
+    assert "preguntas_frecuentes.0.pregunta" in res.json()["campos"]
+    assert "redes_sociales.0.url" in res.json()["campos"]

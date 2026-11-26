@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import type { Configuracion } from "@/shared/api/tipos";
 import { enlaceWhatsappGeneral } from "@/shared/lib/whatsapp";
@@ -53,6 +54,12 @@ export function PieDePagina({ configuracion }: { configuracion: Configuracion | 
               Escribinos por WhatsApp
             </a>
           ) : null}
+          <Link
+            href="/contacto"
+            className="text-rojo-oscuro self-start text-sm font-semibold underline underline-offset-4"
+          >
+            Contacto y confianza
+          </Link>
         </div>
         <div className="flex flex-col gap-1 text-sm">
           <h2 className="titulo text-lg">Horario</h2>

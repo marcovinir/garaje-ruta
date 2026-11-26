@@ -138,3 +138,38 @@ it("carga y guarda las condiciones comerciales en Más datos", async () => {
     }),
   );
 });
+
+it("edita preguntas frecuentes y redes sin perder las condiciones del negocio", async () => {
+  const u = userEvent.setup();
+  let cuerpo: unknown;
+  servidor.use(
+    http.get("*/api/v1/panel/configuracion/", () =>
+      HttpResponse.json({
+        ...CONFIG,
+        metodos_pago: "Transferencia",
+        redes_sociales: [{ red: "Vieja", url: "https://social.example/vieja" }],
+      }),
+    ),
+    http.put("*/api/v1/panel/configuracion/", async ({ request }) => {
+      const valores = (await request.json()) as Record<string, unknown>;
+      cuerpo = valores;
+      return HttpResponse.json(valores);
+    }),
+  );
+  renderPanel(<PaginaConfiguracion />);
+  await u.click(await screen.findByRole("button", { name: "Quitar la red social 1" }));
+  await u.click(screen.getByRole("button", { name: "Agregar red social" }));
+  await u.type(screen.getByLabelText("Nombre de la red"), "Red nueva");
+  await u.type(screen.getByLabelText("Enlace de la red"), "https://social.example/nueva");
+  await u.click(screen.getByRole("button", { name: "Agregar pregunta" }));
+  await u.type(screen.getByLabelText("Pregunta", { exact: true }), "¿Cómo pregunto?");
+  await u.type(screen.getByLabelText("Respuesta", { exact: true }), "Escribinos.");
+  await u.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() =>
+    expect(cuerpo).toMatchObject({
+      metodos_pago: "Transferencia",
+      preguntas_frecuentes: [{ pregunta: "¿Cómo pregunto?", respuesta: "Escribinos." }],
+      redes_sociales: [{ red: "Red nueva", url: "https://social.example/nueva" }],
+    }),
+  );
+});
